@@ -1,0 +1,1906 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Market News</title>
+  <style>
+
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f15;
+      --sidebar: #171f2a;
+      --sidebar-active: #101722;
+      --panel: #0f141d;
+      --panel-soft: #141b26;
+      --line: rgba(133, 151, 176, 0.18);
+      --line-strong: rgba(170, 188, 215, 0.28);
+      --text: #e7edf7;
+      --muted: #8d9aae;
+      --faint: #5f6c7e;
+      --orange: #ff8a1f;
+      --red: #ef405f;
+      --green: #19b77a;
+      --blue: #79a7ff;
+      --yellow: #f2c744;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--text);
+      background:
+        linear-gradient(90deg, rgba(255, 138, 31, 0.035), transparent 16rem),
+        linear-gradient(180deg, #0a0e14 0%, #0c1118 48%, #090d13 100%);
+      font: 14px/1.55 Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100vh;
+      padding: 8px 5px;
+      border-right: 1px solid rgba(0, 0, 0, 0.55);
+      background: var(--sidebar);
+    }
+
+    .sidebar-brand {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      margin: 0 auto 14px;
+      border: 1px solid rgba(255, 138, 31, 0.46);
+      border-radius: 8px;
+      background: #131b25;
+      color: var(--orange);
+      font-weight: 800;
+    }
+
+    .nav-list,
+    .sidebar-foot {
+      display: grid;
+      gap: 4px;
+    }
+
+    .nav-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 17px 1fr;
+      align-items: center;
+      gap: 4px;
+      min-height: 30px;
+      width: 100%;
+      border: 0;
+      border-radius: 2px;
+      background: transparent;
+      color: #aab5c4;
+      cursor: pointer;
+      padding: 0 3px;
+      text-align: left;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--sidebar-active);
+      color: var(--text);
+    }
+
+    .nav-item.active::before {
+      content: "";
+      position: absolute;
+      left: -5px;
+      top: 6px;
+      bottom: 6px;
+      width: 2px;
+      background: var(--orange);
+    }
+
+    .nav-icon {
+      display: grid;
+      place-items: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.07);
+      color: inherit;
+      font-size: 9px;
+      font-weight: 750;
+    }
+
+    .nav-item.active .nav-icon {
+      background: var(--orange);
+      color: #10131a;
+    }
+
+    .nav-label {
+      overflow: hidden;
+      font-size: 11px;
+      font-weight: 620;
+      white-space: nowrap;
+    }
+
+    .workspace {
+      min-width: 0;
+      padding: 0 26px 34px;
+    }
+
+    .page {
+      display: none;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .news-top {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.9fr) minmax(520px, 1.6fr);
+      gap: 22px;
+      align-items: start;
+      padding: 0 0 20px;
+    }
+
+    .title-block {
+      display: grid;
+      justify-items: center;
+      padding-top: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      color: #dfe5f0;
+      font-family: Georgia, "Times New Roman", "Microsoft YaHei", serif;
+      font-size: 38px;
+      line-height: 1;
+      font-weight: 760;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .market-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .market-card {
+      min-height: 58px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #0d121b;
+      padding: 8px 10px;
+      overflow: hidden;
+    }
+
+    .market-name {
+      color: #9ca8ba;
+      font-size: 11px;
+      font-weight: 680;
+    }
+
+    .market-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: end;
+      margin-top: 3px;
+    }
+
+    .market-value {
+      color: var(--red);
+      font-size: 20px;
+      font-weight: 780;
+      line-height: 1;
+    }
+
+    .market-change {
+      display: block;
+      margin-top: 2px;
+      color: var(--red);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .sparkline {
+      width: 100%;
+      height: 25px;
+    }
+
+    .news-controls {
+      position: relative;
+      z-index: 5000;
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) 94px 104px;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: rgba(13, 18, 27, 0.76);
+      overflow: visible;
+    }
+
+    .search,
+    .select,
+    .button {
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--text);
+      outline: none;
+    }
+
+    .search {
+      width: 100%;
+      padding: 0 10px;
+    }
+
+    .search::placeholder {
+      color: #5f6b7b;
+    }
+
+    .select {
+      padding: 0 9px;
+    }
+
+    .source-stack {
+      position: relative;
+      z-index: 6000;
+      display: block;
+      min-width: 0;
+    }
+
+    .source-stack.open {
+      z-index: 10000;
+    }
+
+    .source-stack .select {
+      width: 100%;
+    }
+
+    .source-trigger {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.16s, background 0.16s, box-shadow 0.16s;
+    }
+
+    .source-trigger:hover,
+    .source-stack.open .source-trigger {
+      border-color: rgba(255, 138, 31, 0.5);
+      background: rgba(255, 138, 31, 0.08);
+      box-shadow: 0 0 0 3px rgba(255, 138, 31, 0.06);
+    }
+
+    .source-trigger::after {
+      content: "";
+      width: 7px;
+      height: 7px;
+      margin-left: 10px;
+      border-right: 2px solid var(--muted);
+      border-bottom: 2px solid var(--muted);
+      transform: rotate(45deg) translateY(-2px);
+      transition: transform 0.16s ease, border-color 0.16s ease;
+    }
+
+    .source-stack.open .source-trigger::after {
+      border-color: #ffd9ba;
+      transform: rotate(225deg) translateY(-2px);
+    }
+
+    .feed-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      z-index: 10001;
+      display: none;
+      gap: 6px;
+      padding: 6px;
+      border: 1px solid rgba(170, 188, 215, 0.24);
+      border-radius: 10px;
+      background: rgba(14, 20, 30, 0.98);
+      box-shadow: 0 18px 46px rgba(0, 0, 0, 0.46), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(12px);
+      overflow: visible;
+    }
+
+    .source-stack.open .feed-menu {
+      display: grid;
+    }
+
+    .feed-category {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      width: 100%;
+      min-height: 34px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #cbd6e6;
+      cursor: pointer;
+      padding: 0 10px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 700;
+      transition: background 0.16s, color 0.16s, transform 0.16s;
+    }
+
+    .feed-category[hidden] {
+      display: none !important;
+    }
+
+    .feed-category:hover,
+    .feed-category:focus-visible {
+      background: rgba(255, 138, 31, 0.12);
+      color: #ffffff;
+      outline: none;
+      transform: translateX(1px);
+    }
+
+    .feed-category::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: rgba(255, 138, 31, 0.72);
+      box-shadow: 0 0 10px rgba(255, 138, 31, 0.22);
+    }
+
+    .feed-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .feed-content[hidden] {
+      display: none !important;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 0 10px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 680;
+      transition: border-color 0.16s, background 0.16s, transform 0.16s;
+    }
+
+    .button:hover {
+      border-color: rgba(255, 138, 31, 0.56);
+      background: rgba(255, 138, 31, 0.12);
+    }
+
+    .button:active {
+      transform: translateY(1px);
+    }
+
+    .button.primary {
+      border-color: rgba(255, 138, 31, 0.6);
+      background: rgba(255, 138, 31, 0.16);
+      color: #ffd9ba;
+    }
+
+    .error {
+      margin-bottom: 14px;
+      padding: 11px 12px;
+      border: 1px solid rgba(239, 64, 95, 0.45);
+      border-radius: 4px;
+      color: #ffd2da;
+      background: rgba(239, 64, 95, 0.1);
+    }
+
+    .news-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(380px, 1.35fr) minmax(260px, 0.86fr) minmax(320px, 1fr);
+      gap: 28px;
+      align-items: start;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 32px;
+      color: #d9e2ef;
+    }
+
+    .section-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 18px;
+      font-weight: 780;
+    }
+
+    .section-mark {
+      color: var(--orange);
+      font-size: 14px;
+    }
+
+    .section-action {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 680;
+    }
+
+    .section-action:hover {
+      color: var(--text);
+    }
+
+    .lead-visual {
+      height: 286px;
+      border: 1px solid rgba(126, 148, 179, 0.18);
+      border-radius: 4px;
+      background: url("banner.jpg") center center / cover no-repeat #101720;
+      box-shadow: inset 0 0 70px rgba(82, 126, 196, 0.2);
+    }
+
+    .lead-title {
+      margin: 13px 0 6px;
+      color: #dce8fa;
+      font-size: 24px;
+      line-height: 1.28;
+      font-weight: 800;
+    }
+
+    .lead-item {
+      position: relative;
+      padding-right: 48px;
+    }
+
+    .lead-item:hover .analysis-trigger,
+    .lead-item .analysis-trigger:focus-visible {
+      opacity: 1;
+    }
+
+    .news-search-trigger {
+      display: block;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      padding: 0;
+      text-align: left;
+    }
+
+    .news-search-trigger:hover .lead-title,
+    .news-search-trigger:hover .compact-title,
+    .news-search-trigger:hover .rank-title,
+    .news-search-trigger:hover .quick-title {
+      color: #ffffff;
+      text-decoration: underline;
+      text-decoration-color: rgba(255, 138, 31, 0.55);
+      text-underline-offset: 3px;
+    }
+
+    .meta-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .meta-dot::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      margin-right: 6px;
+      border-radius: 50%;
+      background: var(--faint);
+      vertical-align: middle;
+    }
+
+    .lead-list,
+    .rank-list,
+    .quick-list {
+      display: grid;
+      gap: 0;
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .compact-item {
+      position: relative;
+      padding: 12px 54px 12px 0;
+      border-bottom: 1px solid rgba(133, 151, 176, 0.12);
+    }
+
+    .compact-title {
+      margin: 0;
+      color: #cfdae9;
+      font-size: 14px;
+      line-height: 1.45;
+      font-weight: 680;
+    }
+
+    .rank-item {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 10px;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(133, 151, 176, 0.12);
+    }
+
+    .rank-number {
+      color: #8794a7;
+      font-size: 18px;
+      font-style: italic;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .rank-item:nth-child(1) .rank-number { color: #ff4c2f; }
+    .rank-item:nth-child(2) .rank-number { color: var(--orange); }
+    .rank-item:nth-child(3) .rank-number { color: var(--yellow); }
+
+    .rank-title {
+      margin: 0;
+      color: #d5dfec;
+      font-size: 14px;
+      line-height: 1.45;
+      font-weight: 680;
+    }
+
+    .quick-tools {
+      display: flex;
+      justify-content: flex-end;
+      min-height: 28px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .auto-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .auto-state input {
+      accent-color: var(--orange);
+    }
+
+    .quick-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr);
+      gap: 12px;
+      padding: 13px 0 15px;
+      border-bottom: 1px solid rgba(133, 151, 176, 0.12);
+    }
+
+    .quick-time {
+      color: #7e8a9e;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .quick-title {
+      margin: 0;
+      color: #d8e2ef;
+      font-size: 14px;
+      line-height: 1.45;
+      font-weight: 720;
+    }
+
+    .quick-body {
+      margin: 6px 0 0;
+      color: #aeb9c9;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 20px;
+      padding: 0 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 20px;
+    }
+
+    .chip.stock {
+      background: rgba(25, 183, 122, 0.14);
+      color: #70e0b5;
+    }
+
+    .chip.hot {
+      background: rgba(239, 64, 95, 0.14);
+      color: #ff879c;
+    }
+
+    .analysis-trigger {
+      position: absolute;
+      top: 12px;
+      right: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 28px;
+      border: 1px solid rgba(255, 138, 31, 0.36);
+      border-radius: 4px;
+      background: rgba(255, 138, 31, 0.1);
+      color: #ffd3aa;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      opacity: 0;
+      transition: opacity 0.16s, border-color 0.16s, background 0.16s;
+    }
+
+    .compact-item:hover .analysis-trigger,
+    .rank-item:hover .analysis-trigger,
+    .quick-item:hover .analysis-trigger,
+    .analysis-trigger:focus-visible {
+      opacity: 1;
+    }
+
+    .analysis-trigger:hover {
+      border-color: rgba(255, 138, 31, 0.72);
+      background: rgba(255, 138, 31, 0.18);
+    }
+
+    .quick-item .analysis-trigger {
+      top: auto;
+      bottom: 14px;
+    }
+
+    .empty {
+      padding: 24px 0;
+      color: var(--muted);
+      text-align: left;
+    }
+
+    .footer-actions {
+      display: flex;
+      justify-content: center;
+      padding-top: 16px;
+    }
+
+    .placeholder-page.active {
+      display: grid;
+      gap: 22px;
+      padding-top: 42px;
+    }
+
+    .placeholder-header h2 {
+      margin: 0;
+      color: #e0e7f2;
+      font-size: 28px;
+      line-height: 1.1;
+    }
+
+    .placeholder-header p {
+      max-width: 660px;
+      margin: 10px 0 0;
+      color: var(--muted);
+    }
+
+    .placeholder-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .placeholder-panel {
+      min-height: 168px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #0f141d;
+      padding: 16px;
+    }
+
+    .placeholder-panel h3 {
+      margin: 0 0 12px;
+      color: #dbe4f1;
+      font-size: 15px;
+    }
+
+    .skeleton-line {
+      height: 12px;
+      margin-top: 10px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .skeleton-line.short {
+      width: 54%;
+    }
+
+    .skeleton-line.mid {
+      width: 76%;
+    }
+
+    .analysis-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 20;
+      width: min(430px, 100vw);
+      height: 100vh;
+      border-left: 1px solid var(--line);
+      background: rgba(10, 14, 21, 0.98);
+      box-shadow: -28px 0 70px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      transform: translateX(104%);
+      transition: transform 0.22s ease;
+    }
+
+    .analysis-panel.open {
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    .search-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 18;
+      width: min(460px, 100vw);
+      height: 100vh;
+      border-left: 1px solid var(--line);
+      background: rgba(11, 15, 22, 0.985);
+      box-shadow: -24px 0 70px rgba(0, 0, 0, 0.44);
+      pointer-events: none;
+      transform: translateX(104%);
+      transition: transform 0.22s ease;
+    }
+
+    .search-panel.open {
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    .search-panel-inner {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      height: 100%;
+    }
+
+    .search-panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      background: #111823;
+    }
+
+    .search-kicker {
+      color: var(--orange);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .search-title {
+      margin: 6px 0 0;
+      font-size: 17px;
+      line-height: 1.35;
+      font-weight: 760;
+    }
+
+    .search-actions {
+      display: flex;
+      gap: 8px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .search-result-list {
+      overflow-y: auto;
+      padding: 12px 18px 24px;
+    }
+
+    .search-result {
+      display: block;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(133, 151, 176, 0.14);
+    }
+
+    .search-result h3 {
+      margin: 0;
+      color: #dbe6f5;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .search-result:hover h3 {
+      color: #ffffff;
+      text-decoration: underline;
+      text-decoration-color: rgba(255, 138, 31, 0.55);
+      text-underline-offset: 3px;
+    }
+
+    .search-result-meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .analysis-inner {
+      display: grid;
+      grid-template-rows: auto 1fr auto auto;
+      height: 100%;
+    }
+
+    .analysis-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      background: #111823;
+    }
+
+    .analysis-kicker {
+      color: var(--orange);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .analysis-title {
+      margin: 6px 0 0;
+      font-size: 17px;
+      line-height: 1.35;
+      font-weight: 760;
+    }
+
+    .close {
+      width: 34px;
+      min-width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .chat-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      padding: 16px 18px;
+    }
+
+    .chat-msg {
+      max-width: 90%;
+      padding: 11px 13px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .chat-msg.assistant {
+      align-self: flex-start;
+      border: 1px solid rgba(121, 167, 255, 0.22);
+      background: rgba(17, 24, 35, 0.78);
+      color: #d5deec;
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+      border: 1px solid rgba(255, 138, 31, 0.3);
+      background: rgba(255, 138, 31, 0.12);
+      color: var(--text);
+    }
+
+    .msg-label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 780;
+      text-transform: uppercase;
+    }
+
+    .chat-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 18px 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .chat-suggest-btn {
+      min-height: 30px;
+      border: 1px solid rgba(121, 167, 255, 0.28);
+      border-radius: 15px;
+      background: rgba(121, 167, 255, 0.08);
+      color: #b9cdfd;
+      cursor: pointer;
+      padding: 0 11px;
+      font-size: 12px;
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: 8px;
+      padding: 12px 18px;
+      border-top: 1px solid var(--line);
+      background: #111823;
+    }
+
+    .chat-input {
+      flex: 1;
+      height: 38px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      outline: none;
+    }
+
+    .chat-send {
+      height: 38px;
+      min-width: 62px;
+      border: 1px solid rgba(255, 138, 31, 0.45);
+      border-radius: 4px;
+      background: rgba(255, 138, 31, 0.14);
+      color: #ffd5b0;
+      cursor: pointer;
+      font-weight: 720;
+    }
+
+    .chat-send:disabled,
+    .chat-input:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .chat-typing {
+      align-self: flex-start;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 10px 12px;
+    }
+
+    .stock-analysis-wrap {
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 8px);
+      overflow: hidden;
+      border-radius: 6px;
+    }
+
+    .stock-analysis-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: transparent;
+    }
+
+    .stock-analysis-loading {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: var(--bg);
+      color: var(--muted);
+      font-size: 14px;
+      transition: opacity 0.3s;
+    }
+
+    .stock-analysis-loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+
+    body[data-active-page="watchlist"] {
+      overflow: hidden;
+    }
+
+    body[data-active-page="watchlist"] .workspace {
+      height: 100vh;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    body[data-active-page="watchlist"] #page-watchlist {
+      width: 100%;
+      max-width: none;
+      height: 100vh;
+      margin: 0;
+      padding: 0 !important;
+    }
+
+    body[data-active-page="watchlist"] .stock-analysis-wrap {
+      height: 100vh;
+      border-radius: 0;
+    }
+
+    body[data-active-page="watchlist"] .stock-analysis-frame {
+      display: block;
+    }
+
+    .stock-analysis-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255, 138, 31, 0.18);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: sa-spin 0.8s linear infinite;
+    }
+
+    @keyframes sa-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 1180px) {
+      .news-top,
+      .news-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .title-block {
+        justify-items: start;
+      }
+
+      .market-strip,
+      .placeholder-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        display: block;
+        height: auto;
+        padding: 8px;
+      }
+
+      .sidebar-brand,
+      .sidebar-foot {
+        display: none;
+      }
+
+      .nav-list {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .nav-item {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        min-height: 46px;
+        text-align: center;
+      }
+
+      .nav-label {
+        font-size: 11px;
+      }
+
+      .workspace {
+        padding: 16px 14px 28px;
+      }
+
+      .news-controls {
+        grid-template-columns: 1fr;
+        overflow: visible;
+      }
+
+      .quick-item {
+        grid-template-columns: 1fr;
+      }
+
+      .analysis-trigger {
+        opacity: 1;
+      }
+    }
+  
+
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    .market-news-shell {
+      min-width: 0;
+      padding: 0 26px 34px;
+    }
+
+    .market-news-shell .page {
+      display: block;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    .source-stack {
+      position: relative;
+      z-index: 40;
+    }
+
+    .news-controls {
+      overflow: visible;
+      align-items: start;
+    }
+
+    .feed-menu {
+      z-index: 100;
+    }
+
+    .ai-chat-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 120;
+      width: min(430px, 100vw);
+      height: 100vh;
+      border-left: 1px solid var(--line);
+      box-shadow: -28px 0 70px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      transform: translateX(104%);
+      transition: transform 0.22s ease;
+    }
+
+    .ai-chat-drawer.open {
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    .ai-chat-frame {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: transparent;
+    }
+
+
+    /* Final dropdown stacking fix: keep menu above the news layout. */
+    .market-news-root,
+    #page-news,
+    .feed-content,
+    #marketFeedContent {
+      overflow: visible;
+    }
+
+    .news-controls {
+      position: relative;
+      z-index: 10000;
+      overflow: visible;
+      isolation: isolate;
+    }
+
+    .source-stack {
+      position: relative;
+      z-index: 10001;
+      overflow: visible;
+    }
+
+    .source-stack.open {
+      z-index: 20000;
+    }
+
+    .feed-menu {
+      position: absolute;
+      z-index: 20001;
+      overflow: visible;
+    }
+
+    .news-grid {
+      position: relative;
+      z-index: 1;
+    }
+
+
+    /* Final AI drawer stacking fix: keep AI Chat above search controls, dropdowns, and side panels. */
+    .ai-chat-drawer,
+    .ai-chat-drawer.open {
+      z-index: 50000 !important;
+    }
+
+    .ai-chat-frame {
+      position: relative;
+      z-index: 1;
+    }
+
+  
+
+    /* Final rank-list AI button fix: keep Hot Rank AI button inside its own row, not absolute to the page. */
+    .rank-item {
+      position: relative !important;
+      grid-template-columns: 24px minmax(0, 1fr) 34px !important;
+      padding: 13px 0 !important;
+      align-items: start;
+    }
+
+    .rank-item > .analysis-trigger {
+      position: static !important;
+      grid-column: 3;
+      grid-row: 1;
+      justify-self: end;
+      align-self: start;
+      margin-top: 0;
+      right: auto !important;
+      top: auto !important;
+      bottom: auto !important;
+      opacity: 0;
+    }
+
+    .rank-item:hover > .analysis-trigger,
+    .rank-item > .analysis-trigger:focus-visible {
+      opacity: 1;
+    }
+
+  </style>
+</head>
+<body>
+  <main class="market-news-shell">
+    <section class="page active" data-page-view="news" id="page-news">
+<div class="news-top">
+<div class="title-block">
+<h1>News</h1>
+<p class="subtitle">7x24 市场快讯和 AI 事件解读</p>
+</div>
+<section aria-label="市场指数" class="market-strip">
+<article class="market-card">
+<div class="market-name">道琼斯指数</div>
+<div class="market-row">
+<div>
+<div class="market-value">51671.03</div>
+<span class="market-change">+468.77 +0.92%</span>
+</div>
+<svg aria-hidden="true" class="sparkline" viewbox="0 0 150 34">
+<path d="M2 24 L15 25 L26 20 L38 23 L50 16 L62 18 L74 13 L86 14 L98 10 L110 13 L122 9 L136 14 L148 16" fill="none" stroke="#ef405f" stroke-width="2"></path>
+</svg>
+</div>
+</article>
+<article class="market-card">
+<div class="market-name">纳斯达克综合指数</div>
+<div class="market-row">
+<div>
+<div class="market-value">26683.94</div>
+<span class="market-change">+795.10 +3.07%</span>
+</div>
+<svg aria-hidden="true" class="sparkline" viewbox="0 0 150 34">
+<path d="M2 27 L15 22 L28 23 L42 18 L55 16 L68 10 L82 12 L96 7 L110 9 L124 11 L138 10 L148 6" fill="none" stroke="#ef405f" stroke-width="2"></path>
+</svg>
+</div>
+</article>
+<article class="market-card">
+<div class="market-name">标普500指数</div>
+<div class="market-row">
+<div>
+<div class="market-value">7554.29</div>
+<span class="market-change">+122.83 +1.65%</span>
+</div>
+<svg aria-hidden="true" class="sparkline" viewbox="0 0 150 34">
+<path d="M2 25 L14 24 L26 20 L39 21 L52 17 L65 12 L78 12 L92 8 L106 9 L120 7 L134 10 L148 5" fill="none" stroke="#ef405f" stroke-width="2"></path>
+</svg>
+</div>
+</article>
+</section>
+</div>
+<section aria-label="新闻控制" class="news-controls">
+<input class="search" id="search" placeholder="搜索关键词、股票代码或来源" type="search"/>
+<select class="select" hidden="" id="source">
+<option value="zh">市场资讯</option>
+<option value="en">英文快讯</option>
+</select>
+<button class="button primary" id="refresh" type="button">刷新</button>
+<button class="button" id="auto" type="button">自动刷新</button>
+</section>
+<div class="feed-content" data-feed-view="market" id="marketFeedContent">
+<div class="error" hidden="" id="error"></div>
+<section aria-label="新闻布局" class="news-grid">
+<section>
+<header class="section-head">
+<h2 class="section-title">要闻 <span class="section-mark">↕</span></h2>
+<button class="section-action" id="leadRefresh" type="button">更多 ›</button>
+</header>
+<div id="leadNews">
+<div class="empty">正在读取要闻...</div>
+</div>
+</section>
+<section>
+<header class="section-head">
+<h2 class="section-title">资讯热榜</h2>
+<button class="section-action" id="rankMore" type="button">更多 ›</button>
+</header>
+<ol class="rank-list" id="hotRank">
+<li class="empty">正在整理热榜...</li>
+</ol>
+</section>
+<section>
+<header class="section-head">
+<h2 class="section-title">快讯 <span class="section-mark">↕</span></h2>
+<button class="section-action" id="quickMoreTop" type="button">更多 ›</button>
+</header>
+<div class="quick-tools">
+<label class="auto-state"><input id="autoCheck" type="checkbox"/> 自动刷新</label>
+</div>
+<div class="quick-list" id="quickNews">
+<div class="empty">正在读取快讯...</div>
+</div>
+<div class="footer-actions">
+<button class="button" id="more" type="button">加载更多</button>
+</div>
+</section>
+</section>
+</div>
+</section>
+  </main>
+
+  <aside aria-hidden="true" class="search-panel" id="searchPanel">
+<div class="search-panel-inner">
+<header class="search-panel-header">
+<div>
+<div class="search-kicker">Google News</div>
+<h2 class="search-title" id="searchPanelTitle">选择一条新闻</h2>
+</div>
+<button aria-label="关闭搜索" class="close" id="searchPanelClose" type="button">×</button>
+</header>
+<div class="search-actions">
+<a class="button primary" href="#" id="openGoogleSearch" rel="noreferrer" target="_blank">打开 Google</a>
+<button class="button" id="copySearchQuery" type="button">复制标题</button>
+</div>
+<div class="search-result-list" id="searchResults">
+<div class="empty">点击任意新闻标题，在这里搜索相关报道。</div>
+</div>
+</div>
+</aside>
+
+  <div class="ai-chat-drawer" id="aiChatDrawer" aria-hidden="true">
+    <iframe id="aiChatFrame" class="ai-chat-frame" src="../ai_chat/ai_chat.html" title="AI Chat"></iframe>
+  </div>
+
+  <script src="../shared/fuzzy-search.js"></script>
+  <script>
+
+    const state = {
+      source: "zh",
+      feedCategory: "market",
+      seqMark: "",
+      hasMore: true,
+      items: [],
+      autoTimer: null,
+      searchItem: null,
+      searchQuery: "",
+      pendingAiItem: null
+    };
+
+    const els = {
+      error: document.querySelector("#error"),
+      leadNews: document.querySelector("#leadNews"),
+      hotRank: document.querySelector("#hotRank"),
+      quickNews: document.querySelector("#quickNews"),
+      search: document.querySelector("#search"),
+      source: document.querySelector("#source"),
+      sourceTrigger: document.querySelector("#sourceTrigger"),
+      sourceStack: document.querySelector(".source-stack"),
+      feedCategories: document.querySelectorAll("[data-feed-category]"),
+      marketFeedContent: document.querySelector("#marketFeedContent"),
+      refresh: document.querySelector("#refresh"),
+      more: document.querySelector("#more"),
+      auto: document.querySelector("#auto"),
+      autoCheck: document.querySelector("#autoCheck"),
+      leadRefresh: document.querySelector("#leadRefresh"),
+      rankMore: document.querySelector("#rankMore"),
+      quickMoreTop: document.querySelector("#quickMoreTop"),
+      searchPanel: document.querySelector("#searchPanel"),
+      searchPanelTitle: document.querySelector("#searchPanelTitle"),
+      searchPanelClose: document.querySelector("#searchPanelClose"),
+      openGoogleSearch: document.querySelector("#openGoogleSearch"),
+      copySearchQuery: document.querySelector("#copySearchQuery"),
+      searchResults: document.querySelector("#searchResults"),
+      aiChatDrawer: document.querySelector("#aiChatDrawer"),
+      aiChatFrame: document.querySelector("#aiChatFrame")
+    };
+
+    function pad(n) {
+      return String(n).padStart(2, "0");
+    }
+
+    function formatTime(seconds) {
+      const d = new Date(Number(seconds) * 1000);
+      return {
+        time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+        date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+        full: d.toLocaleString()
+      };
+    }
+
+    function cleanText(item) {
+      return (item.title || item.content || "").trim();
+    }
+
+    function normalize(payload) {
+      const data = payload && payload.data && payload.data.data;
+      return {
+        seqMark: data && data.seqMark ? data.seqMark : "",
+        hasMore: Boolean(data && data.hasMore),
+        news: data && Array.isArray(data.news) ? data.news : []
+      };
+    }
+
+    function showError(message) {
+      if (!els.error) return;
+      els.error.hidden = !message;
+      els.error.textContent = message || "";
+    }
+
+    function setLoading(isLoading) {
+      [els.refresh, els.leadRefresh, els.rankMore, els.quickMoreTop].forEach((button) => {
+        if (button) button.disabled = isLoading;
+      });
+      if (els.more) els.more.disabled = isLoading || !state.hasMore;
+    }
+
+    async function fetchNews({ reset = false } = {}) {
+      if (state.feedCategory !== "market") return;
+      showError("");
+      setLoading(true);
+
+      const params = new URLSearchParams({
+        source: state.source,
+        pageSize: "20",
+        seqMark: reset ? "" : state.seqMark
+      });
+
+      try {
+        const res = await fetch(`../../api/flash?${params.toString()}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const payload = await res.json();
+        if (payload.code !== 0) throw new Error(payload.message || "接口返回异常");
+        const next = normalize(payload);
+        state.seqMark = next.seqMark;
+        state.hasMore = next.hasMore;
+        state.items = reset ? next.news : dedupe([...state.items, ...next.news]);
+        renderNews();
+      } catch (err) {
+        showError(`读取快讯失败：${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function dedupe(items) {
+      const seen = new Set();
+      return items.filter((item) => {
+        const key = item.newsUniqueId || item.id || cleanText(item);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function filteredItems() {
+      const query = els.search.value.trim();
+      if (!query) return state.items;
+      const selector = (item) => {
+        const stocks = (item.quote || []).map((q) => `${q.code} ${q.name}`).join(" ");
+        return `${cleanText(item)} ${item.source || ""} ${stocks}`;
+      };
+      return window.GVIWFuzzy
+        ? window.GVIWFuzzy.rank(query, state.items, selector, 0.5)
+        : state.items.filter((item) => selector(item).toLowerCase().includes(query.toLowerCase()));
+    }
+
+    function hotItems(items) {
+      return [...items].sort((a, b) => {
+        const scoreA = Number(a.level || 0) * 10 + (a.quote || []).length;
+        const scoreB = Number(b.level || 0) * 10 + (b.quote || []).length;
+        if (scoreA !== scoreB) return scoreB - scoreA;
+        return Number(b.time || 0) - Number(a.time || 0);
+      });
+    }
+
+    function renderNews() {
+      const items = filteredItems();
+      if (!items.length) {
+        const empty = state.items.length ? "没有匹配的快讯" : "暂无数据";
+        els.leadNews.innerHTML = `<div class="empty">${empty}</div>`;
+        els.hotRank.innerHTML = `<li class="empty">${empty}</li>`;
+        els.quickNews.innerHTML = `<div class="empty">${empty}</div>`;
+        return;
+      }
+
+      renderLead(items);
+      renderHotRank(items);
+      renderQuick(items);
+    }
+
+    function renderLead(items) {
+      const lead = items[0];
+      const leadTime = formatTime(lead.time);
+      const leadBody = lead.content && lead.content !== lead.title ? `<p class="quick-body">${escapeHtml(lead.content)}</p>` : "";
+      const listItems = items.slice(1, 8).map((item) => compactNewsHtml(item)).join("");
+      els.leadNews.innerHTML = `
+        <article class="lead-item" data-id="${escapeHtml(lead.newsUniqueId || lead.id)}">
+          <button class="news-search-trigger" type="button" data-search-id="${escapeHtml(lead.newsUniqueId || lead.id)}">
+            <div class="lead-visual" aria-hidden="true"></div>
+            <h3 class="lead-title">${escapeHtml(cleanText(lead))}</h3>
+          </button>
+          <div class="meta-line">
+            <span>${leadTime.time}</span>
+            <span class="meta-dot">${leadTime.date}</span>
+          </div>
+          ${leadBody}
+          ${analysisButtonHtml(lead)}
+        </article>
+        <div class="lead-list">${listItems}</div>
+      `;
+    }
+
+    function renderHotRank(items) {
+      els.hotRank.innerHTML = hotItems(items).slice(0, 6).map((item, index) => {
+        return `
+          <li class="rank-item" data-id="${escapeHtml(item.newsUniqueId || item.id || index)}">
+            <div class="rank-number">${index + 1}</div>
+            <div>
+              <button class="news-search-trigger" type="button" data-search-id="${escapeHtml(item.newsUniqueId || item.id)}">
+                <h3 class="rank-title">${escapeHtml(cleanText(item))}</h3>
+              </button>
+              ${chipsHtml(item)}
+            </div>
+            ${analysisButtonHtml(item)}
+          </li>
+        `;
+      }).join("");
+    }
+
+    function renderQuick(items) {
+      els.quickNews.innerHTML = items.map((item) => {
+        const t = formatTime(item.time);
+        const body = item.content && item.content !== item.title ? `<p class="quick-body">${escapeHtml(item.content)}</p>` : "";
+        return `
+          <article class="quick-item" data-id="${escapeHtml(item.newsUniqueId || item.id)}">
+            <time class="quick-time">${t.time}</time>
+            <div>
+              <button class="news-search-trigger" type="button" data-search-id="${escapeHtml(item.newsUniqueId || item.id)}">
+                <h3 class="quick-title">${escapeHtml(cleanText(item))}</h3>
+              </button>
+              ${body}
+              <div class="meta-line"><span>${t.date}</span></div>
+              ${chipsHtml(item)}
+            </div>
+            ${analysisButtonHtml(item)}
+          </article>
+        `;
+      }).join("");
+    }
+
+    function compactNewsHtml(item) {
+      const t = formatTime(item.time);
+      return `
+        <article class="compact-item" data-id="${escapeHtml(item.newsUniqueId || item.id)}">
+          <button class="news-search-trigger" type="button" data-search-id="${escapeHtml(item.newsUniqueId || item.id)}">
+            <h3 class="compact-title">${escapeHtml(cleanText(item))}</h3>
+          </button>
+          <div class="meta-line"><span>${t.time}</span></div>
+          ${chipsHtml(item)}
+          ${analysisButtonHtml(item)}
+        </article>
+      `;
+    }
+
+    function chipsHtml(item) {
+      const level = Number(item.level || 0);
+      const stocks = (item.quote || []).slice(0, 4).map((q) => `<span class="chip stock">${escapeHtml(q.code)}</span>`).join("");
+      const hot = level > 0 ? `<span class="chip hot">重点</span>` : "";
+      return hot || stocks ? `<div class="chip-row">${hot}${stocks}</div>` : "";
+    }
+
+    function analysisButtonHtml(item) {
+      return `<button class="analysis-trigger" type="button" data-analyze-id="${escapeHtml(item.newsUniqueId || item.id)}" title="AI 分析" aria-label="AI 分析">AI</button>`;
+    }
+
+    function findItem(id) {
+      return state.items.find((item) => String(item.newsUniqueId || item.id) === String(id));
+    }
+
+    function openAiChatFromItem(id) {
+      const item = findItem(id);
+      if (!item) return;
+      state.pendingAiItem = item;
+      els.aiChatDrawer.classList.add("open");
+      els.aiChatDrawer.setAttribute("aria-hidden", "false");
+      // Force reload the iframe to prevent stale JS/HTML cache in memory
+      els.aiChatFrame.src = els.aiChatFrame.src;
+    }
+
+    function postPendingAiChatItem() {
+      if (!state.pendingAiItem || !els.aiChatFrame.contentWindow) return;
+      els.aiChatFrame.contentWindow.postMessage({
+        type: "open-ai-chat",
+        source: state.source,
+        item: state.pendingAiItem
+      }, "*");
+      state.pendingAiItem = null;
+    }
+
+    function closeAiChatDrawer() {
+      els.aiChatDrawer.classList.remove("open");
+      els.aiChatDrawer.setAttribute("aria-hidden", "true");
+    }
+
+    async function openSearchPanel(id) {
+      const item = findItem(id);
+      if (!item) return;
+      const query = cleanText(item);
+      state.searchItem = item;
+      state.searchQuery = query;
+      const googleUrl = googleSearchUrl(query);
+
+      els.searchPanel.classList.add("open");
+      els.searchPanel.setAttribute("aria-hidden", "false");
+      els.searchPanelTitle.textContent = query.slice(0, 70);
+      els.openGoogleSearch.href = googleUrl;
+      els.searchResults.innerHTML = '<div class="chat-typing">正在通过 Google News 搜索相关新闻...</div>';
+
+      try {
+        const res = await fetch(`../../api/websearch?q=${encodeURIComponent(query)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const payload = await res.json();
+        if (payload.code !== 0) throw new Error(payload.message || "搜索接口返回异常");
+        els.openGoogleSearch.href = payload.googleUrl || googleUrl;
+        renderSearchResults(payload.results || [], payload.googleUrl || googleUrl);
+      } catch (err) {
+        els.searchResults.innerHTML = `
+          <div class="empty">
+            Google News 搜索暂时不可用。<br>
+            可以点击上方按钮用 Google 搜索这条新闻。<br>
+            <span class="search-result-meta">${escapeHtml(err.message)}</span>
+          </div>
+        `;
+      }
+    }
+
+    function renderSearchResults(results, googleUrl) {
+      if (!results.length) {
+        els.searchResults.innerHTML = `
+          <div class="empty">
+            暂未拿到 Google News RSS 结果。<br>
+            <a class="button primary" href="${escapeHtml(googleUrl)}" target="_blank" rel="noreferrer">打开 Google 搜索</a>
+          </div>
+        `;
+        return;
+      }
+      els.searchResults.innerHTML = results.map((result) => `
+        <a class="search-result" href="${escapeHtml(result.url)}" target="_blank" rel="noreferrer">
+          <h3>${escapeHtml(result.title)}</h3>
+          <div class="search-result-meta">${result.published ? escapeHtml(result.published) : ""}</div>
+        </a>
+      `).join("");
+    }
+
+    function closeSearchPanel() {
+      els.searchPanel.classList.remove("open");
+      els.searchPanel.setAttribute("aria-hidden", "true");
+    }
+
+    function setAutoRefresh(enabled) {
+      if (enabled && !state.autoTimer) {
+        state.autoTimer = setInterval(() => fetchNews({ reset: true }), 60000);
+        els.auto.textContent = "停止自动";
+        els.autoCheck.checked = true;
+        return;
+      }
+      if (!enabled && state.autoTimer) {
+        clearInterval(state.autoTimer);
+        state.autoTimer = null;
+        els.auto.textContent = "自动刷新";
+        els.autoCheck.checked = false;
+      }
+    }
+
+    const FEED_LABELS = {
+      market: "市场资讯",
+      academic: "学术资讯",
+      opensource: "开源社区"
+    };
+
+    function toggleFeedCategories(forceOpen) {
+      if (!els.sourceStack || !els.sourceTrigger) return;
+      const shouldOpen = typeof forceOpen === "boolean"
+        ? forceOpen
+        : !els.sourceStack.classList.contains("open");
+      els.sourceStack.classList.toggle("open", shouldOpen);
+      els.sourceTrigger.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+    }
+
+    function closeFeedCategories() {
+      toggleFeedCategories(false);
+    }
+
+    function setFeedCategory(category) {
+      state.feedCategory = "market";
+      if (els.sourceTrigger) els.sourceTrigger.textContent = FEED_LABELS[category] || FEED_LABELS.market;
+      els.feedCategories.forEach((button) => {
+        button.hidden = button.dataset.feedCategory === category;
+      });
+      if (els.marketFeedContent) els.marketFeedContent.hidden = false;
+
+      closeFeedCategories();
+
+      if (!state.items.length) fetchNews({ reset: true });
+      else renderNews();
+    }
+
+    function googleSearchUrl(query) {
+      return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[ch]));
+    }
+
+    els.aiChatFrame.addEventListener("load", postPendingAiChatItem);
+    window.addEventListener("message", (event) => {
+      const data = event.data || {};
+      if (data.type === "ai-chat-ready") postPendingAiChatItem();
+      if (data.type === "close-ai-chat") closeAiChatDrawer();
+    });
+
+    els.refresh.addEventListener("click", () => {
+      state.seqMark = "";
+      fetchNews({ reset: true });
+    });
+    els.more.addEventListener("click", () => fetchNews());
+    els.leadRefresh.addEventListener("click", () => fetchNews());
+    els.rankMore.addEventListener("click", () => fetchNews());
+    els.quickMoreTop.addEventListener("click", () => fetchNews());
+    els.search.addEventListener("input", renderNews);
+    if (els.source) els.source.addEventListener("change", () => {
+      state.source = els.source.value;
+      state.seqMark = "";
+      state.items = [];
+      renderNews();
+      fetchNews({ reset: true });
+      closeFeedCategories();
+    });
+    if (els.sourceTrigger) els.sourceTrigger.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleFeedCategories();
+    });
+    els.feedCategories.forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setFeedCategory(button.dataset.feedCategory || "market");
+        button.blur();
+      });
+    });
+    els.auto.addEventListener("click", () => setAutoRefresh(!state.autoTimer));
+    els.autoCheck.addEventListener("change", () => setAutoRefresh(els.autoCheck.checked));
+    els.searchPanelClose.addEventListener("click", closeSearchPanel);
+    els.copySearchQuery.addEventListener("click", async () => {
+      if (!state.searchQuery) return;
+      try {
+        await navigator.clipboard.writeText(state.searchQuery);
+      } catch (err) {
+        els.searchResults.insertAdjacentHTML("afterbegin", `<div class="error">复制失败：${escapeHtml(err.message)}</div>`);
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeFeedCategories();
+        closeAiChatDrawer();
+      }
+    });
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".source-stack")) {
+        closeFeedCategories();
+      }
+
+      const searchButton = event.target.closest("[data-search-id]");
+      if (searchButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        openSearchPanel(searchButton.dataset.searchId);
+        return;
+      }
+
+      const button = event.target.closest("[data-analyze-id]");
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      openAiChatFromItem(button.dataset.analyzeId);
+    });
+
+    state.feedCategory = "market";
+    fetchNews({ reset: true });
+
+  </script>
+</body>
+</html>

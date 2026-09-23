@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stock Analysis Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.165.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.165.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <style>
+    .indicator-host {
+      height: 560px;
+      min-height: 420px;
+      padding: 0;
+      overflow: hidden;
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .indicator-host-header {
+      flex: 0 0 auto;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .indicator-host-toggle {
+      width: 100%;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .indicator-host-toggle h3 {
+      margin: 0;
+    }
+
+    .indicator-host-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(148, 163, 184, 0.08);
+      color: rgba(226, 232, 240, 0.8);
+      transition: transform 160ms ease;
+    }
+
+    .indicator-host:not(.is-collapsed) .indicator-host-icon {
+      transform: rotate(45deg);
+    }
+
+    .indicator-host-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .indicator-host.is-collapsed {
+      height: auto;
+      min-height: 0;
+    }
+
+    .indicator-host.is-collapsed .indicator-host-body {
+      display: none;
+    }
+
+    .indicator-panel-frame {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    .pane-container:empty {
+      display: none;
+    }
+
+    .price-chart {
+      position: relative;
+    }
+
+    .chart-event-tooltip {
+      position: absolute;
+      z-index: 50;
+      min-width: 230px;
+      max-width: 310px;
+      padding: 10px 12px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.96);
+      color: #e2e8f0;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+      backdrop-filter: blur(10px);
+    }
+
+    .chart-event-tooltip.hidden {
+      display: none;
+    }
+
+    .event-tooltip-item + .event-tooltip-item {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .event-tooltip-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .event-tooltip-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #2563eb;
+      flex: 0 0 auto;
+    }
+
+    .event-tooltip-item.dividend .event-tooltip-dot {
+      background: #f59e0b;
+    }
+
+    .event-tooltip-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 5px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .event-tooltip-source {
+      color: #38bdf8;
+    }
+
+    .event-tooltip-detail {
+      margin-top: 6px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: #cbd5e1;
+    }
+
+
+    /* Keep the dynamic indicator chart directly under Price action,
+       and prevent the right indicator panel from stretching the price row. */
+    .dashboard-grid {
+      align-items: start !important;
+      grid-auto-rows: max-content !important;
+    }
+
+    .dashboard-grid > .main-panel {
+      grid-column: 1 !important;
+      grid-row: 1 !important;
+      align-self: start !important;
+      height: auto !important;
+      min-height: 0 !important;
+    }
+
+    .dashboard-grid > .side-panel {
+      grid-column: 2 !important;
+      grid-row: 1 / span 5 !important;
+      align-self: start !important;
+      height: auto !important;
+      min-height: 0 !important;
+    }
+
+    #customIndicatorPanel {
+      grid-column: 1 !important;
+      grid-row: 2 !important;
+      align-self: start !important;
+      width: 100%;
+      margin-top: 0;
+    }
+
+    #customIndicatorPanel.hidden {
+      display: none !important;
+    }
+
+    #customIndicatorChart {
+      height: 260px !important;
+    }
+
+    .volume-panel {
+      grid-column: 1 !important;
+      grid-row: 3 !important;
+    }
+
+    .macd-panel {
+      grid-column: 1 !important;
+      grid-row: 4 !important;
+    }
+
+    .rsi-panel {
+      grid-column: 1 !important;
+      grid-row: 5 !important;
+    }
+
+    .volume-panel,
+    .macd-panel,
+    .rsi-panel {
+      display: none !important;
+    }
+
+
+    .dashboard-grid.show-macd-chart .macd-panel {
+      display: block !important;
+    }
+
+    .dashboard-grid.show-rsi-chart .rsi-panel {
+      display: block !important;
+    }
+
+    .pane-container {
+      grid-column: 1 !important;
+      grid-row: auto !important;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      margin-top: 16px;
+    }
+    .pane-container:empty {
+      display: none;
+    }
+
+    @media (max-width: 980px) {
+      .dashboard-grid > .main-panel,
+      .dashboard-grid > .side-panel,
+      #customIndicatorPanel,
+      .volume-panel,
+      .macd-panel,
+      .rsi-panel {
+        grid-column: 1 !important;
+        grid-row: auto !important;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <section class="search-card" aria-label="Stock search">
+        <form id="searchForm" class="search-row">
+          <div class="stock-search-field">
+            <input id="symbolInput" value="VST" autocomplete="off" spellcheck="false" placeholder="搜索股票代码或公司名称" data-i18n-placeholder="search.placeholder" role="combobox" aria-autocomplete="list" aria-controls="stockSearchSuggestions" aria-expanded="false" />
+            <div id="stockSearchSuggestions" class="stock-search-suggestions hidden" role="listbox"></div>
+          </div>
+          <button type="submit" data-i18n="search.button">Analyze</button>
+        </form>
+        <div class="quick-symbols" aria-label="Quick symbols">
+          <button data-symbol="VST">VST</button>
+          <button data-symbol="NVDA">NVDA</button>
+          <button data-symbol="AAPL">AAPL</button>
+          <button data-symbol="MSFT">MSFT</button>
+          <button data-symbol="TSLA">TSLA</button>
+        </div>
+      </section>
+    </header>
+
+    <section id="status" class="status hidden"></section>
+
+    <section class="summary-grid">
+      <article class="metric-card wide">
+        <p class="label" data-i18n="summary.symbol">Symbol</p>
+        <h2 id="stockTitle">—</h2>
+        <p id="stockSub" class="muted" data-i18n="summary.waiting">Waiting for data</p>
+        <button id="favoriteStockButton" class="favorite-stock-button top-right-favorite" type="button" aria-pressed="false">
+          <span class="favorite-heart" aria-hidden="true">♥</span>
+          <span id="favoriteStockLabel" data-i18n="summary.addFavorite">Add favorite</span>
+        </button>
+      </article>
+      <article class="metric-card">
+        <p class="label" data-i18n="summary.last">Last</p>
+        <h2 id="lastPrice">—</h2>
+        <p id="changeText" class="muted">—</p>
+      </article>
+      <article class="metric-card interactive" id="ratingCard" style="cursor: pointer;">
+        <p class="label" data-i18n="summary.analystRating">Rating</p>
+        <h2 id="analystRatingText">—</h2>
+        <div class="rating-footer">
+          <p id="ratingHelpText" class="muted" data-i18n="summary.ratingHelp">Based on analyst consensus</p>
+          <span id="clickPromptText" class="click-prompt" data-i18n="summary.clickDetails">Click for details</span>
+        </div>
+      </article>
+      <div id="cacheText" class="muted" style="display:none"></div>
+    </section>
+
+    <section class="quote-stats-panel chart-panel" aria-label="Quote statistics">
+      <div class="panel-header small">
+        <h3 data-i18n="panels.quoteStatsTitle">Quote statistics</h3>
+      </div>
+      <div id="quoteStatsGrid" class="quote-stats-grid"></div>
+    </section>
+
+    <section class="market-timeframe-bar" aria-label="Timeframe controls">
+      <button class="timeframe-button active" type="button" data-timeframe-period="1y" data-timeframe-interval="1d">日K</button>
+      <button class="timeframe-button" type="button" data-timeframe-period="1mo" data-timeframe-interval="1h">1小时</button>
+      <button class="timeframe-button" type="button" data-timeframe-period="1mo" data-timeframe-interval="30m">30分</button>
+      <button class="timeframe-button" type="button" data-timeframe-period="1mo" data-timeframe-interval="15m">15分</button>
+      <button class="timeframe-button" type="button" data-timeframe-period="1mo" data-timeframe-interval="5m">5分</button>
+      <span class="timeframe-divider" aria-hidden="true"></span>
+      <button class="timeframe-button" type="button" data-timeframe-period="1mo" data-timeframe-interval="1d">1月</button>
+      <button class="timeframe-button" type="button" data-timeframe-period="3mo" data-timeframe-interval="1d">3月</button>
+      <button class="timeframe-button" type="button" data-timeframe-period="6mo" data-timeframe-interval="1d">6月</button>
+      <button class="timeframe-button" type="button" data-timeframe-period="1y" data-timeframe-interval="1d">1年</button>
+      <button class="timeframe-button" type="button" data-timeframe-period="2y" data-timeframe-interval="1d">2年</button>
+      <button class="timeframe-button" type="button" data-timeframe-period="5y" data-timeframe-interval="1d">5年</button>
+      <button class="timeframe-button" type="button" data-timeframe-period="max" data-timeframe-interval="1d">最大</button>
+    </section>
+
+    <section class="trade-plan-panel chart-panel" aria-label="Trade plan calculator">
+      <div class="trade-plan-toolbar">
+        <div>
+          <h3>数学买卖点</h3>
+          <p>基于多周期趋势、实时成交量、VWAP、ATR、结构位与盈亏比计算，不预测价格。</p>
+        </div>
+        <div class="trade-plan-actions">
+          <label for="tradePlanHorizon">计划周期</label>
+          <select id="tradePlanHorizon">
+            <option value="intraday_short">日内短线 · 5分钟执行</option>
+            <option value="intraday_trend">日内趋势 · 15分钟执行</option>
+            <option value="swing_1_3d">1–3天 · 1小时执行</option>
+            <option value="weekly">周内 · 日线执行</option>
+          </select>
+          <label for="tradePlanCost">成本(bps)</label>
+          <input id="tradePlanCost" type="number" value="5" min="0" max="100" step="1" inputmode="decimal">
+          <button id="calculateTradePlan" class="trade-plan-button" type="button">一键计算买卖点</button>
+        </div>
+      </div>
+      <div id="tradePlanResult" class="trade-plan-result hidden" aria-live="polite"></div>
+    </section>
+
+    <section class="dashboard-grid">
+      <section class="chart-panel main-panel" id="pricePanel">
+        <div class="panel-header">
+          <div>
+            <h3 data-i18n="panels.priceTitle">Price action</h3>
+            <p data-i18n="panels.priceDesc">Candles, SMA20, SMA50, Bollinger Bands, and buy/sell markers.</p>
+          </div>
+          <div class="chart-controls-wrapper">
+            <div class="view-toggle-group">
+              <button id="btn2D" class="view-toggle-btn active" type="button">2D</button>
+              <button id="btn3D" class="view-toggle-btn" type="button">3D</button>
+            </div>
+            <div id="controls3d" class="controls-3d">
+              <button id="btn3dVol" class="control-btn active" type="button">Volume</button>
+              <button id="btn3dMA" class="control-btn active" type="button">MA20/50</button>
+              <button id="btn3dEvents" class="control-btn active" type="button">Events</button>
+              <button id="btnFusionView" class="control-btn active" type="button" data-i18n="panels.fusionView">融合视图</button>
+              <button id="btn3dReset" class="control-btn" type="button">Reset</button>
+            </div>
+          </div>
+
+        </div>
+        <div id="priceChart" class="chart price-chart"></div>
+        <div id="priceChart3d" class="chart price-chart hidden"></div>
+      </section>
+
+      <div id="customIndicatorPanel" class="chart-panel full-width hidden">
+        <div class="panel-header small">
+          <h3 id="customIndicatorTitle">Sub Indicators</h3>
+        </div>
+        <div id="customIndicatorChart" class="chart" style="height: 320px;"></div>
+        <div id="customIndicatorChart3d" class="chart hidden" style="height: 320px; position: relative;"></div>
+      </div>
+
+
+      <aside class="side-panel">
+        <section class="chart-panel compact-panel indicator-host" id="indicatorHost" aria-label="Technical indicators">
+          <div class="indicator-host-header">
+            <button
+              id="indicatorHostToggle"
+              class="indicator-host-toggle"
+              type="button"
+              aria-expanded="true"
+              aria-controls="indicatorHostBody"
+            >
+              <h3 data-i18n="panels.trendTitle">趋势指标</h3>
+              <span class="indicator-host-icon" aria-hidden="true">＋</span>
+            </button>
+          </div>
+
+          <div id="indicatorHostBody" class="indicator-host-body">
+            <iframe
+              id="indicatorPanelFrame"
+              class="indicator-panel-frame"
+              src="/static/indicators/indicator.html"
+              title="Technical Indicators"
+              scrolling="no"
+            ></iframe>
+          </div>
+        </section>
+
+        <section class="chart-panel compact-panel">
+          <div class="panel-header small"><h3 data-i18n="panels.reasonsTitle">Signal reasons</h3></div>
+          <ul id="reasonList" class="reason-list"><li data-i18n="states.noData">No data yet.</li></ul>
+        </section>
+        <section class="chart-panel compact-panel interpretation-panel">
+          <div class="panel-header small">
+            <div>
+              <h3 data-i18n="panels.readingTitle">Current indicator reading</h3>
+              <p data-i18n="panels.readingDesc">Auto-generated from the latest candle and indicator values.</p>
+            </div>
+          </div>
+          <div id="indicatorReading" class="reading-list"></div>
+        </section>
+      </aside>
+
+      <section class="chart-panel volume-panel">
+        <div class="panel-header small"><h3 data-i18n="panels.volumeTitle">Volume</h3></div>
+        <div id="volumeChart" class="chart small-chart"></div>
+      </section>
+      <section class="chart-panel macd-panel">
+        <div class="panel-header small"><h3>MACD</h3></div>
+        <div id="macdChart" class="chart small-chart"></div>
+      </section>
+      <section class="chart-panel full-width rsi-panel">
+        <div class="panel-header small"><h3>RSI</h3></div>
+        <div id="rsiChart" class="chart small-chart"></div>
+      </section>
+
+      <div id="paneContainer" class="pane-container"></div>
+
+      <div id="termGrid" class="term-grid" style="display: none;"></div>
+    </section>
+    
+    <div id="ratingModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-overlay" id="modalOverlay"></div>
+      <div class="modal-content">
+        <button id="closeModal" class="close-button" aria-label="Close details">&times;</button>
+        <h3 id="modalTitle">Rating Details</h3>
+        <div id="modalBody"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+
+  <script>
+    (function () {
+      const frame = document.getElementById('indicatorPanelFrame');
+      const host = document.getElementById('indicatorHost');
+      const toggle = document.getElementById('indicatorHostToggle');
+
+      if (!frame || !host || !toggle) return;
+
+      const refreshCharts = () => {
+        window.dispatchEvent(new Event('resize'));
+
+        requestAnimationFrame(() => {
+          window.dispatchEvent(new Event('resize'));
+        });
+      };
+
+      let frameLoadedOnce = false;
+
+      const pathname = window.location.pathname.replace(/\/+$/, '');
+      const candidates = [];
+
+      if (pathname === '/stock-analysis' || pathname.endsWith('/stock-analysis')) {
+        candidates.push(`${pathname}/static/indicators/indicator.html`);
+      }
+
+      candidates.push('/static/indicators/indicator.html');
+      candidates.push('static/indicators/indicator.html');
+
+      let index = 0;
+
+      const loadFrameIfNeeded = () => {
+        if (frameLoadedOnce) return;
+        frameLoadedOnce = true;
+        frame.src = candidates[index];
+      };
+
+      if (!host.classList.contains('is-collapsed')) {
+        loadFrameIfNeeded();
+      }
+
+      toggle.addEventListener('click', () => {
+        const collapsed = host.classList.toggle('is-collapsed');
+        const expanded = !collapsed;
+
+        toggle.setAttribute('aria-expanded', String(expanded));
+
+        if (expanded) {
+          loadFrameIfNeeded();
+          refreshCharts();
+        }
+      });
+
+      frame.addEventListener('load', () => {
+        try {
+          const text = frame.contentDocument?.body?.innerText || '';
+          const looksLike404 = /404|File not found|Nothing matches the given URI|Error response/i.test(text);
+
+          if (looksLike404 && index < candidates.length - 1) {
+            index += 1;
+            frame.src = candidates[index];
+            return;
+          }
+
+          const doc = frame.contentDocument || frame.contentWindow?.document;
+          if (doc) {
+            const style = doc.createElement('style');
+            style.textContent = `
+              html, body {
+                overflow: hidden !important;
+              }
+              * {
+                scrollbar-width: none !important;
+              }
+              *::-webkit-scrollbar {
+                display: none !important;
+              }
+            `;
+            doc.head.appendChild(style);
+          }
+        } catch (error) {
+          // Same-origin pages are readable. If not readable, leave the iframe alone.
+        }
+
+        refreshCharts();
+      });
+    })();
+  </script>
+  <script src="/static/app.js"></script>
+  <script type="module" src="/static/stock-3d.js"></script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+# =========================
+# Secrets / local env
+# =========================
+.env
+.env.*
+!.env.example
+!.env.template
+api/.env.local
+login/.env.local
+pages/news/ai_research_daily_crawler/.env.local
+
+# =========================
+# Runtime databases / user data
+# =========================
+data/*
+!data/.gitkeep
+
+pages/stock-analysis-page/backend/data/*.db
+pages/stock-analysis-page/backend/data/*.sqlite
+pages/stock-analysis-page/backend/data/*.sqlite3
+pages/stock-analysis-page/backend/data/users/
+
+# =========================
+# Crawler generated data
+# =========================
+pages/news/ai_research_daily_crawler/data/
+pages/news/opensource_community/data/
+
+# =========================
+# Python cache / virtual env
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+venv/
+.venv/
+env/
+ENV/
+
+# =========================
+# Node / frontend tooling
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# Logs / temp / local output
+# =========================
+*.log
+logs/
+tmp/
+temp/
+.cache/
+test_err.txt
+
+# =========================
+# OS / editor
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# =========================
+# Build / package outputs
+# =========================
+dist/
+build/
+*.zip
+*.tar
+*.tar.gz
+
+# =========================
+# Project specific
+# =========================
+.claude/
+.superpowers/
+initial_state.json
+initial_state_forecast.json
+.deps_installed
+crawler_service_url.txt
+
+# Local agent notes and generated crawler output are not part of the public source.
+MEMORY.md
+**/MEMORY.md
+instruction.md
+**/agent_cli_instruction.md
+skills/
+pages/news/opensource_community/data/

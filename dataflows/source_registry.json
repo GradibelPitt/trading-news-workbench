@@ -1,0 +1,38 @@
+{
+  "market_news": {
+    "name": "Market News Flash",
+    "description": "7x24 market news flash from Futu/Moomoo APIs",
+    "source_type": "api_stream",
+    "module": "news_core"
+  },
+  "opensource_community": {
+    "name": "GitHub Opensource Community",
+    "description": "GitHub trending AI and development repositories",
+    "source_type": "rss_html_crawler",
+    "module": "pages.news.opensource_community.crawler"
+  },
+  "academic_ai": {
+    "name": "arXiv Academic AI",
+    "description": "arXiv academic research papers on AI and LLMs",
+    "source_type": "api_crawler",
+    "module": "pages.news.opensource_community.crawler"
+  },
+  "yfinance_news": {
+    "name": "Yahoo Finance News",
+    "description": "Stock news from Yahoo Finance API router",
+    "source_type": "api",
+    "module": "pages.analysis.crawler.news_data_tools"
+  },
+  "stocktwits": {
+    "name": "StockTwits Sentiment",
+    "description": "StockTwits messages stream and sentiment statistics",
+    "source_type": "api",
+    "module": "pages.analysis.crawler.stocktwits"
+  },
+  "reddit": {
+    "name": "Reddit Search RSS",
+    "description": "Reddit posts search mentions from WallStreetBets and investment subreddits",
+    "source_type": "rss",
+    "module": "pages.analysis.crawler.reddit"
+  }
+}

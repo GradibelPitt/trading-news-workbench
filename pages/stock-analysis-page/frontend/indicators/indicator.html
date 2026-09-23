@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      color: #dbeafe;
+      background: transparent;
+      font: 13px/1.45 Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    .indicator-shell {
+      height: 100%;
+      overflow: auto;
+      scrollbar-width: none;
+      border: 1px solid rgba(96, 165, 250, 0.22);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(8, 13, 24, 0.98));
+      padding: 8px 0;
+    }
+
+    .indicator-shell::-webkit-scrollbar { display: none; }
+
+
+
+    .indicator-section { border-bottom: 1px solid rgba(148, 163, 184, 0.1); }
+
+    .indicator-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      border: 0;
+      background: rgba(30, 41, 59, 0.32);
+      color: #f8fafc;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .indicator-section-header:hover { background: rgba(37, 99, 235, 0.16); }
+
+    .indicator-caret { transition: transform 0.18s ease; opacity: 0.8; }
+    .indicator-section.collapsed .indicator-caret { transform: rotate(-90deg); }
+
+    .indicator-list { padding: 8px 8px 12px; }
+    .indicator-section.collapsed .indicator-list { display: none; }
+
+    .indicator-row {
+      display: grid;
+      grid-template-columns: 22px 1fr 28px;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 42px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: #dbeafe;
+      padding: 0 8px;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .indicator-row:hover { background: rgba(30, 64, 175, 0.24); }
+    .indicator-row.active { background: rgba(37, 99, 235, 0.28); color: #f8fafc; }
+
+    .indicator-star {
+      color: #facc15;
+      font-size: 15px;
+      text-align: center;
+    }
+
+    .indicator-name {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-weight: 650;
+    }
+
+    .indicator-action {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(203, 213, 225, 0.64);
+      border-radius: 999px;
+      color: #cbd5e1;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .indicator-row.active .indicator-action {
+      border-color: rgba(147, 197, 253, 0.95);
+      color: #93c5fd;
+    }
+  </style>
+</head>
+<body>
+  <main class="indicator-shell">
+    <section class="indicator-section" data-section>
+      <button class="indicator-section-header" type="button" data-toggle-section>
+        <span>主图指标</span>
+        <span class="indicator-caret">⌄</span>
+      </button>
+      <div class="indicator-list">
+        <button class="indicator-row" type="button" data-key="ma" data-pane="price"><span class="indicator-star">★</span><span class="indicator-name">MA 移动平均线</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="ema" data-pane="price"><span class="indicator-star">★</span><span class="indicator-name">EMA 指数移动平均线</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="bbi" data-pane="price"><span></span><span class="indicator-name">BBI 多空指数</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="sar" data-pane="price"><span class="indicator-star">★</span><span class="indicator-name">SAR 停损点转向指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="alligator" data-pane="price"><span></span><span class="indicator-name">ALLIGAT 鳄鱼线指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="gmma" data-pane="price"><span></span><span class="indicator-name">GMMA 顾比均线</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="twap" data-pane="price"><span></span><span class="indicator-name">TWAP 时间加权平均价</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="vwma" data-pane="price"><span></span><span class="indicator-name">VWMA 成交量加权移动平均</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="wma" data-pane="price"><span></span><span class="indicator-name">WMA 加权移动平均线</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="tema" data-pane="price"><span></span><span class="indicator-name">TEMA 三重指数移动平均线</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="dema" data-pane="price"><span></span><span class="indicator-name">DEMA 双重指数移动平均线</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="hma" data-pane="price"><span></span><span class="indicator-name">HMA 船体移动平均线</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="lsma" data-pane="price"><span></span><span class="indicator-name">LSMA 最小二乘移动平均线</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="tsf" data-pane="price"><span></span><span class="indicator-name">TSF 时间序列预测指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="kc" data-pane="price"><span class="indicator-star">★</span><span class="indicator-name">KC 肯特纳通道</span><span class="indicator-action">+</span></button>
+      </div>
+    </section>
+
+    <section class="indicator-section" data-section>
+      <button class="indicator-section-header" type="button" data-toggle-section>
+        <span>副图指标</span>
+        <span class="indicator-caret">⌄</span>
+      </button>
+      <div class="indicator-list">
+        <button class="indicator-row" type="button" data-key="macd" data-pane="pane"><span class="indicator-star">★</span><span class="indicator-name">MACD 指数平滑异同移动平均线</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="dma" data-pane="pane"><span class="indicator-star">★</span><span class="indicator-name">DMA 平行线差指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="dmi" data-pane="pane"><span></span><span class="indicator-name">DMI 趋向指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="emv" data-pane="pane"><span class="indicator-star">★</span><span class="indicator-name">EMV 简易波动指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="atr" data-pane="pane"><span></span><span class="indicator-name">ATR 真实波幅</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="fisher" data-pane="pane"><span></span><span class="indicator-name">FISHER 费雪变换</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="iv" data-pane="pane"><span class="indicator-star">★</span><span class="indicator-name">IV 隐含波动率</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="iv_rank" data-pane="pane"><span></span><span class="indicator-name">IV_RANK 隐含波动率等级</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="iv_percentile" data-pane="pane"><span></span><span class="indicator-name">IV_PERCENTILE 隐含波动率百分位</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="volat" data-pane="pane"><span></span><span class="indicator-name">VOLAT 历史波动率</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="vmacd" data-pane="pane"><span></span><span class="indicator-name">VMACD 量指数平滑异同</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="trix" data-pane="pane"><span></span><span class="indicator-name">TRIX 三重指数平滑平均线</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="priceosc" data-pane="pane"><span></span><span class="indicator-name">PRICEOSC 价格摆动指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="ddi" data-pane="pane"><span></span><span class="indicator-name">DDI 方向标准离差指数</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="mi" data-pane="pane"><span></span><span class="indicator-name">MI 动量指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="si" data-pane="pane"><span></span><span class="indicator-name">SI 摆动指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="ao" data-pane="pane"><span></span><span class="indicator-name">AO 动量震荡指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="tower" data-pane="pane"><span></span><span class="indicator-name">TOWER 宝塔线</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="ewo" data-pane="pane"><span></span><span class="indicator-name">EWO 艾略特波浪震荡指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="rvi" data-pane="pane"><span></span><span class="indicator-name">RVI 相对离散指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="hlvol" data-pane="pane"><span></span><span class="indicator-name">HLVOL HL波动率</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="rmi" data-pane="pane"><span></span><span class="indicator-name">RMI 相对动量指数</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="smie" data-pane="pane"><span></span><span class="indicator-name">SMIE 随机动量指数</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="smieo" data-pane="pane"><span></span><span class="indicator-name">SMIEO 随机动量指数震荡</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="aroon" data-pane="pane"><span></span><span class="indicator-name">AROON 阿隆指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="chop" data-pane="pane"><span></span><span class="indicator-name">CHOP 波动指数</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="hadiff" data-pane="pane"><span></span><span class="indicator-name">HADIFF 平均K线差</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="er" data-pane="pane"><span></span><span class="indicator-name">ER 效率比</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="squeeze" data-pane="pane"><span></span><span class="indicator-name">SQUEEZE 挤牌指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="fo" data-pane="pane"><span></span><span class="indicator-name">FO 预测震荡指标</span><span class="indicator-action">+</span></button>
+        <button class="indicator-row" type="button" data-key="kdj" data-pane="pane"><span class="indicator-star">★</span><span class="indicator-name">KDJ 随机指标</span><span class="indicator-action">+</span></button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const activeKeys = new Set();
+
+    document.addEventListener('click', (event) => {
+      const sectionToggle = event.target.closest('[data-toggle-section]');
+      if (sectionToggle) {
+        sectionToggle.closest('[data-section]')?.classList.toggle('collapsed');
+        return;
+      }
+
+      const row = event.target.closest('[data-key]');
+      if (!row) return;
+
+      const key = row.dataset.key;
+      const pane = row.dataset.pane;
+      const enabled = !activeKeys.has(key);
+
+      if (enabled) activeKeys.add(key);
+      else activeKeys.delete(key);
+
+      row.classList.toggle('active', enabled);
+      row.querySelector('.indicator-action').textContent = enabled ? '−' : '+';
+
+      window.parent.postMessage({
+        type: 'stock-indicator-toggle',
+        key,
+        pane,
+        enabled
+      }, window.location.origin);
+    });
+
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== 'stock-indicator-state') return;
+
+      activeKeys.clear();
+      (event.data.activeKeys || []).forEach((key) => activeKeys.add(key));
+
+      document.querySelectorAll('[data-key]').forEach((row) => {
+        const enabled = activeKeys.has(row.dataset.key);
+        row.classList.toggle('active', enabled);
+        row.querySelector('.indicator-action').textContent = enabled ? '−' : '+';
+      });
+    });
+  </script>
+</body>
+</html>

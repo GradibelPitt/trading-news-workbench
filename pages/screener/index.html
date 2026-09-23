@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>股票选股器</title>
+  <link rel="stylesheet" href="styles.css">
+  <script>window.SCREENER_API_BASE = '/stock-analysis';</script>
+</head>
+<body>
+  <main class="screener-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">MARKET SCREENER</div>
+        <h1>股票选股器</h1>
+        <p>从真实行情与基本面数据中筛选；缺失字段不会参与判断。</p>
+      </div>
+      <div class="top-actions">
+        <span class="source-pill" id="sourcePill">数据源：等待连接</span>
+        <button class="ghost-button" id="resetButton" type="button">重置</button>
+        <button class="primary-button" id="runButton" type="button">运行筛选</button>
+      </div>
+    </header>
+
+    <section class="preset-bar" aria-label="快捷筛选">
+      <span>快捷策略</span>
+      <button type="button" data-preset="active">活跃大盘股</button>
+      <button type="button" data-preset="momentum">强势动量</button>
+      <button type="button" data-preset="value">低估值</button>
+      <button type="button" data-preset="income">高股息</button>
+      <button type="button" data-preset="oversold">超卖观察</button>
+      <button type="button" data-preset="breakout">放量突破</button>
+    </section>
+
+    <div class="workspace">
+      <aside class="filter-panel" aria-label="筛选条件">
+        <div class="filter-heading">
+          <div><strong>筛选条件</strong><small id="activeFilterCount">0 个已启用</small></div>
+          <button id="collapseAllButton" type="button">全部收起</button>
+        </div>
+
+        <details open>
+          <summary>市场与交易所</summary>
+          <div class="filter-body">
+            <label>市场<select id="market"><option value="US">美国</option><option value="HK">香港</option><option value="CN">中国内地</option><option value="ALL">全部</option></select></label>
+            <fieldset><legend>交易所</legend><div class="check-grid" id="exchangeGroup">
+              <label><input type="checkbox" value="NASDAQ"> NASDAQ</label>
+              <label><input type="checkbox" value="NYSE"> NYSE</label>
+              <label><input type="checkbox" value="AMEX"> AMEX</label>
+              <label><input type="checkbox" value="OTC"> OTC</label>
+            </div></fieldset>
+            <label>行业板块<select id="sector"><option value="">全部板块</option></select></label>
+            <label>细分行业<input id="industry" type="search" placeholder="例如 Semiconductors"></label>
+          </div>
+        </details>
+
+        <details open>
+          <summary>价格与规模</summary>
+          <div class="filter-body">
+            <div class="range-row"><label>最低价<input id="priceMin" type="number" min="0" step="0.01" placeholder="不限"></label><label>最高价<input id="priceMax" type="number" min="0" step="0.01" placeholder="不限"></label></div>
+            <div class="range-row"><label>最低市值<select id="marketCapMin"><option value="">不限</option><option value="300000000">3 亿</option><option value="2000000000">20 亿</option><option value="10000000000">100 亿</option><option value="200000000000">2000 亿</option></select></label><label>最高市值<select id="marketCapMax"><option value="">不限</option><option value="2000000000">20 亿</option><option value="10000000000">100 亿</option><option value="200000000000">2000 亿</option></select></label></div>
+            <div class="range-row"><label>涨跌幅 ≥ %<input id="changeMin" type="number" step="0.1" placeholder="不限"></label><label>涨跌幅 ≤ %<input id="changeMax" type="number" step="0.1" placeholder="不限"></label></div>
+          </div>
+        </details>
+
+        <details open>
+          <summary>成交活跃度</summary>
+          <div class="filter-body">
+            <label>当日成交量 ≥<input id="volumeMin" type="number" min="0" step="1000" placeholder="不限"></label>
+            <label>20日均量 ≥<input id="avgVolumeMin" type="number" min="0" step="1000" placeholder="不限"></label>
+            <div class="range-row"><label>量比 ≥<input id="relativeVolumeMin" type="number" min="0" step="0.1" placeholder="不限"></label><label>Beta ≤<input id="betaMax" type="number" min="0" step="0.1" placeholder="不限"></label></div>
+          </div>
+        </details>
+
+        <details>
+          <summary>估值与盈利</summary>
+          <div class="filter-body">
+            <div class="range-row"><label>市盈率 ≥<input id="peMin" type="number" step="0.1" placeholder="不限"></label><label>市盈率 ≤<input id="peMax" type="number" step="0.1" placeholder="不限"></label></div>
+            <div class="range-row"><label>预期市盈率 ≤<input id="forwardPeMax" type="number" step="0.1" placeholder="不限"></label><label>PEG ≤<input id="pegMax" type="number" step="0.1" placeholder="不限"></label></div>
+            <div class="range-row"><label>市净率 ≤<input id="pbMax" type="number" step="0.1" placeholder="不限"></label><label>市销率 ≤<input id="psMax" type="number" step="0.1" placeholder="不限"></label></div>
+            <div class="range-row"><label>EPS增长 ≥ %<input id="epsGrowthMin" type="number" step="0.1" placeholder="不限"></label><label>营收增长 ≥ %<input id="revenueGrowthMin" type="number" step="0.1" placeholder="不限"></label></div>
+          </div>
+        </details>
+
+        <details>
+          <summary>股息与财务质量</summary>
+          <div class="filter-body">
+            <div class="range-row"><label>股息率 ≥ %<input id="dividendYieldMin" type="number" min="0" step="0.1" placeholder="不限"></label><label>派息率 ≤ %<input id="payoutRatioMax" type="number" min="0" step="1" placeholder="不限"></label></div>
+            <div class="range-row"><label>净资产收益率 ≥ %<input id="roeMin" type="number" step="0.1" placeholder="不限"></label><label>负债权益比 ≤<input id="debtEquityMax" type="number" step="0.1" placeholder="不限"></label></div>
+          </div>
+        </details>
+
+        <details open>
+          <summary>技术条件</summary>
+          <div class="filter-body">
+            <label>趋势位置<select id="trend"><option value="">不限</option><option value="above_ema20">价格高于 EMA20</option><option value="above_ema50">价格高于 EMA50</option><option value="above_ema200">价格高于 EMA200</option><option value="golden_cross">EMA50 上穿 EMA200</option><option value="below_ema20">价格低于 EMA20</option><option value="death_cross">EMA50 下穿 EMA200</option></select></label>
+            <div class="range-row"><label>RSI(14) ≥<input id="rsiMin" type="number" min="0" max="100" step="1" placeholder="不限"></label><label>RSI(14) ≤<input id="rsiMax" type="number" min="0" max="100" step="1" placeholder="不限"></label></div>
+            <div class="range-row"><label>距52周高点 ≤ %<input id="fromHighMax" type="number" min="0" step="1" placeholder="不限"></label><label>ATR% ≥<input id="atrPctMin" type="number" min="0" step="0.1" placeholder="不限"></label></div>
+            <label class="check-line"><input id="unusualVolume" type="checkbox"> 异常放量（量比 ≥ 1.5）</label>
+            <label class="check-line"><input id="newHigh" type="checkbox"> 接近/突破 52 周新高</label>
+          </div>
+        </details>
+      </aside>
+
+      <section class="results-panel">
+        <div class="results-toolbar">
+          <div><strong id="resultTitle">筛选结果</strong><span id="resultMeta">等待运行</span></div>
+          <div class="result-actions">
+            <label class="table-search">⌕ <input id="tableSearch" type="search" placeholder="结果内搜索"></label>
+            <label>排序<select id="sortSelect"><option value="market_cap:desc">市值 ↓</option><option value="change_pct:desc">涨幅 ↓</option><option value="relative_volume:desc">量比 ↓</option><option value="volume:desc">成交量 ↓</option><option value="pe:asc">市盈率 ↑</option><option value="dividend_yield:desc">股息率 ↓</option></select></label>
+            <button class="ghost-button" id="exportButton" type="button" disabled>导出 CSV</button>
+          </div>
+        </div>
+
+        <div class="notice" id="notice" role="status">选择条件后运行筛选。结果仅展示接口返回的真实数据。</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th data-sort="symbol">股票</th><th data-sort="price">价格</th><th data-sort="change_pct">涨跌幅</th><th data-sort="market_cap">市值</th><th data-sort="volume">成交量</th><th data-sort="relative_volume">量比</th><th data-sort="pe">P/E</th><th data-sort="dividend_yield">股息率</th><th data-sort="rsi14">RSI</th><th>技术状态</th>
+            </tr></thead>
+            <tbody id="resultBody"><tr><td colspan="10"><div class="empty-state"><b>尚未运行筛选</b><span>设置条件后点击“运行筛选”</span></div></td></tr></tbody>
+          </table>
+        </div>
+        <footer class="pagination">
+          <span id="pageMeta">第 0 / 0 页</span>
+          <div><button id="prevButton" type="button" disabled>上一页</button><button id="nextButton" type="button" disabled>下一页</button></div>
+        </footer>
+      </section>
+    </div>
+  </main>
+  <script src="../shared/fuzzy-search.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

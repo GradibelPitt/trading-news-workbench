@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Chat</title>
+  <style>
+
+    :root {
+      color-scheme: dark;
+      --line: rgba(133, 151, 176, 0.18);
+      --text: #e7edf7;
+      --muted: #8d9aae;
+      --orange: #ff8a1f;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      color: var(--text);
+      background: rgba(10, 14, 21, 0.98);
+      font: 14px/1.55 Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      color: inherit;
+      font: inherit;
+    }
+
+    .analysis-panel {
+      width: 100%;
+      height: 100vh;
+      background: rgba(10, 14, 21, 0.98);
+    }
+
+    .analysis-inner {
+      display: grid;
+      grid-template-rows: auto 1fr auto auto;
+      height: 100%;
+    }
+
+    .analysis-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      background: #111823;
+    }
+
+    .analysis-kicker {
+      color: var(--orange);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .analysis-title {
+      margin: 6px 0 0;
+      font-size: 17px;
+      line-height: 1.35;
+      font-weight: 760;
+    }
+
+    .close {
+      width: 34px;
+      min-width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .ai-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .ai-status::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #6b7280;
+    }
+    .ai-status.ready::before { background: #10b981; }
+    .settings { font-size: 15px; }
+
+    .chat-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      padding: 16px 18px;
+    }
+
+    .chat-msg {
+      max-width: 90%;
+      padding: 11px 13px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .chat-msg.assistant {
+      align-self: flex-start;
+      border: 1px solid rgba(121, 167, 255, 0.22);
+      background: rgba(17, 24, 35, 0.78);
+      color: #d5deec;
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+      border: 1px solid rgba(255, 138, 31, 0.3);
+      background: rgba(255, 138, 31, 0.12);
+      color: var(--text);
+    }
+
+    .msg-label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 780;
+      text-transform: uppercase;
+    }
+
+    .empty {
+      padding: 24px 0;
+      color: var(--muted);
+      text-align: left;
+    }
+
+    .chat-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 18px 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .chat-suggest-btn {
+      min-height: 30px;
+      border: 1px solid rgba(121, 167, 255, 0.28);
+      border-radius: 15px;
+      background: rgba(121, 167, 255, 0.08);
+      color: #b9cdfd;
+      cursor: pointer;
+      padding: 0 11px;
+      font-size: 12px;
+    }
+
+    .chat-suggest-btn:disabled {
+      opacity: 0.62;
+      cursor: default;
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: 8px;
+      padding: 12px 18px;
+      border-top: 1px solid var(--line);
+      background: #111823;
+    }
+
+    .chat-input {
+      flex: 1;
+      height: 38px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      outline: none;
+    }
+
+    .chat-send {
+      height: 38px;
+      min-width: 62px;
+      border: 1px solid rgba(255, 138, 31, 0.45);
+      border-radius: 4px;
+      background: rgba(255, 138, 31, 0.14);
+      color: #ffd5b0;
+      cursor: pointer;
+      font-weight: 720;
+    }
+
+    .chat-send:disabled,
+    .chat-input:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .chat-typing {
+      align-self: flex-start;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 10px 12px;
+    }
+
+    .agent-response ul {
+      margin: 6px 0;
+      padding-left: 18px;
+    }
+    .agent-response li {
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+    .agent-response h3 {
+      margin: 12px 0 6px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .agent-clear-answer {
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 12px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      border-top-color: var(--orange);
+      animation: spin 0.8s linear infinite;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .config-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(3, 7, 12, 0.78);
+      backdrop-filter: blur(8px);
+    }
+    .config-modal[hidden] { display: none; }
+    .config-card {
+      width: min(520px, 100%);
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      border: 1px solid rgba(121, 167, 255, 0.28);
+      border-radius: 10px;
+      background: #111823;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+      padding: 18px;
+    }
+    .config-head { display: flex; justify-content: space-between; gap: 12px; }
+    .config-head h3 { margin: 0; font-size: 17px; }
+    .config-copy { margin: 6px 0 16px; color: var(--muted); font-size: 12px; }
+    .config-grid { display: grid; gap: 12px; }
+    .config-field { display: grid; gap: 6px; }
+    .config-field label { color: #b9c6d8; font-size: 12px; font-weight: 700; }
+    .config-field select,
+    .config-field input,
+    .config-field textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.045);
+      outline: none;
+      padding: 9px 10px;
+    }
+    .config-field textarea { min-height: 92px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    .config-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .config-note {
+      border: 1px solid rgba(255, 138, 31, 0.24);
+      border-radius: 6px;
+      background: rgba(255, 138, 31, 0.07);
+      color: #d8c1aa;
+      padding: 10px 11px;
+      font-size: 12px;
+    }
+    .config-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .config-btn {
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      padding: 0 12px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .config-btn.primary { border-color: rgba(255, 138, 31, 0.5); background: rgba(255, 138, 31, 0.16); color: #ffd5b0; }
+    .config-btn.danger { color: #ff9a9a; }
+    .config-btn:disabled { opacity: .55; cursor: wait; }
+    .config-result { min-height: 20px; margin-top: 10px; color: var(--muted); font-size: 12px; }
+    .config-result.error { color: #ff9a9a; }
+    .config-result.success { color: #6ee7b7; }
+
+    @media (max-width: 540px) {
+      .ai-status { display: none; }
+      .config-row { grid-template-columns: 1fr; }
+    }
+
+  </style>
+</head>
+<body>
+  <aside aria-hidden="false" class="analysis-panel" id="analysisPanel">
+<div class="analysis-inner">
+<header class="analysis-header">
+<div>
+<div class="analysis-kicker">AI Chat</div>
+<h2 class="analysis-title" id="analysisTitle">选择一条新闻</h2>
+</div>
+<div class="header-actions">
+<span class="ai-status" id="aiStatus">未配置</span>
+<button aria-label="AI 服务设置" class="close settings" id="aiSettings" title="AI 服务设置" type="button">⚙</button>
+<button aria-label="关闭分析" class="close" id="analysisClose" type="button">&times;</button>
+</div>
+</header>
+<div class="chat-messages" id="chatMessages">
+<div class="empty">悬停新闻并点击 AI 按钮开始对话。</div>
+</div>
+<div class="chat-suggestions" hidden="" id="chatSuggestions"></div>
+<div class="chat-input-area">
+<input class="chat-input" disabled="" id="chatInput" placeholder="输入追问..." type="text"/>
+<button class="chat-send" disabled="" id="chatSend" type="button">发送</button>
+</div>
+</div>
+</aside>
+
+<div class="config-modal" id="configModal" hidden>
+  <section class="config-card" role="dialog" aria-modal="true" aria-labelledby="configTitle">
+    <div class="config-head">
+      <div>
+        <div class="analysis-kicker">AI Provider</div>
+        <h3 id="configTitle">连接 AI 服务</h3>
+      </div>
+      <button class="close" id="configClose" aria-label="关闭设置" type="button">&times;</button>
+    </div>
+    <p class="config-copy">优先支持 DeepSeek 与阿里云百炼 Qwen。可直接粘贴裸 Key、.env、JSON 或 Authorization: Bearer 配置，系统会解析并验证。</p>
+    <div class="config-grid">
+      <div class="config-field">
+        <label for="providerSelect">服务商</label>
+        <select id="providerSelect"><option value="deepseek">DeepSeek</option><option value="qwen">阿里云百炼 · Qwen</option></select>
+      </div>
+      <div class="config-field">
+        <label for="configText">API Key / 配置片段</label>
+        <textarea id="configText" autocomplete="off" spellcheck="false" placeholder="sk-...&#10;或 DASHSCOPE_API_KEY=sk-...&#10;或 {&quot;api_key&quot;:&quot;...&quot;,&quot;model&quot;:&quot;qwen3.7-plus&quot;}"></textarea>
+      </div>
+      <div class="config-row">
+        <div class="config-field"><label for="baseUrlInput">Base URL</label><input id="baseUrlInput" type="url"></div>
+        <div class="config-field"><label for="modelInput">模型</label><input id="modelInput" type="text"></div>
+      </div>
+      <div class="config-note" id="authNote">平台账号登录不能直接替代模型 API 凭证。这里会打开官方控制台完成登录/创建 Key，再回到本页粘贴；不会读取浏览器 Cookie。</div>
+    </div>
+    <div class="config-actions">
+      <button class="config-btn primary" id="saveConfig" type="button">验证并保存</button>
+      <button class="config-btn" id="openProvider" type="button">登录官方平台</button>
+      <button class="config-btn" id="openKeyPage" type="button">创建 / 管理 API Key</button>
+      <button class="config-btn danger" id="clearConfig" type="button" hidden>清除配置</button>
+    </div>
+    <div class="config-result" id="configResult" role="status"></div>
+  </section>
+</div>
+
+  <script>
+
+    const state = {
+      source: "zh",
+      chatItem: null,
+      chatAnalysis: null,
+      chatMessages: [],
+      chatHistory: [],
+      suggestionRequestId: 0,
+      aiConfig: null,
+      providers: [],
+      pendingMessage: null
+    };
+
+    const els = {
+      analysisTitle: document.querySelector("#analysisTitle"),
+      analysisClose: document.querySelector("#analysisClose"),
+      aiSettings: document.querySelector("#aiSettings"),
+      aiStatus: document.querySelector("#aiStatus"),
+      chatMessages: document.querySelector("#chatMessages"),
+      chatSuggestions: document.querySelector("#chatSuggestions"),
+      chatInput: document.querySelector("#chatInput"),
+      chatSend: document.querySelector("#chatSend"),
+      configModal: document.querySelector("#configModal"),
+      configClose: document.querySelector("#configClose"),
+      providerSelect: document.querySelector("#providerSelect"),
+      configText: document.querySelector("#configText"),
+      baseUrlInput: document.querySelector("#baseUrlInput"),
+      modelInput: document.querySelector("#modelInput"),
+      authNote: document.querySelector("#authNote"),
+      saveConfig: document.querySelector("#saveConfig"),
+      openProvider: document.querySelector("#openProvider"),
+      openKeyPage: document.querySelector("#openKeyPage"),
+      clearConfig: document.querySelector("#clearConfig"),
+      configResult: document.querySelector("#configResult")
+    };
+
+    function cleanText(item) {
+      return (item.title || item.content || "").trim();
+    }
+
+    function selectedProvider() {
+      return state.providers.find((provider) => provider.id === els.providerSelect.value) || state.providers[0] || null;
+    }
+
+    function setConfigResult(message, type = "") {
+      els.configResult.textContent = message || "";
+      els.configResult.className = `config-result ${type}`.trim();
+    }
+
+    function updateConfigStatus() {
+      const config = state.aiConfig;
+      if (config && config.configured) {
+        els.aiStatus.textContent = `${config.providerName} · ${config.model}`;
+        els.aiStatus.classList.add("ready");
+        els.clearConfig.hidden = false;
+      } else {
+        els.aiStatus.textContent = "未配置";
+        els.aiStatus.classList.remove("ready");
+        els.clearConfig.hidden = true;
+      }
+    }
+
+    function applyProviderDefaults(force = false) {
+      const provider = selectedProvider();
+      if (!provider) return;
+      if (force || !els.baseUrlInput.value) els.baseUrlInput.value = provider.baseUrl || "";
+      if (force || !els.modelInput.value) els.modelInput.value = provider.model || "";
+      els.authNote.textContent = provider.authNote || "该平台使用服务端 API Key。";
+      els.openProvider.hidden = !provider.accountUrl;
+      els.openKeyPage.hidden = !provider.keyUrl;
+      els.configText.placeholder = provider.requiresKey === false
+        ? "本机 Ollama 无需 API Key"
+        : "可粘贴裸 Key、.env、JSON 或 Authorization: Bearer ...";
+    }
+
+    async function loadProviderCatalog() {
+      if (state.providers.length) return;
+      const res = await fetch("../../api/ai/providers");
+      const payload = await res.json();
+      if (!res.ok || payload.code !== 0) throw new Error(payload.message || "无法读取服务商列表");
+      state.providers = payload.providers || [];
+      els.providerSelect.innerHTML = state.providers.map((provider) =>
+        `<option value="${escapeHtml(provider.id)}">${escapeHtml(provider.name)}</option>`
+      ).join("");
+    }
+
+    async function refreshConfigState() {
+      await loadProviderCatalog();
+      const res = await fetch("../../api/ai/config");
+      const payload = await res.json();
+      if (!res.ok || payload.code !== 0) throw new Error(payload.message || "无法读取 AI 配置");
+      state.aiConfig = payload.config;
+      updateConfigStatus();
+      return state.aiConfig;
+    }
+
+    async function openConfigModal() {
+      els.configModal.hidden = false;
+      setConfigResult("正在读取本机配置...");
+      try {
+        const config = await refreshConfigState();
+        els.providerSelect.value = config.provider || "deepseek";
+        els.baseUrlInput.value = config.baseUrl || "";
+        els.modelInput.value = config.model || "";
+        els.configText.value = "";
+        applyProviderDefaults(false);
+        setConfigResult(config.configured
+          ? `已配置 ${config.providerName}，密钥仅保存在本机后端（长度 ${config.keyLength || 0}）。`
+          : "尚未配置。粘贴内容后点击“验证并保存”。");
+      } catch (error) {
+        setConfigResult(error.message, "error");
+      }
+    }
+
+    function closeConfigModal() {
+      els.configModal.hidden = true;
+    }
+
+    async function ensureAiConfigured(question, isSilent) {
+      try {
+        const config = state.aiConfig || await refreshConfigState();
+        if (config && config.configured) return true;
+      } catch (_) {
+        // The settings dialog below will surface the concrete server error.
+      }
+      state.pendingMessage = { question, isSilent };
+      state.chatMessages = [{
+        role: "assistant",
+        content: "尚未连接 AI 服务。点击右上角设置，可直接粘贴 DeepSeek 或阿里云百炼 Qwen 的 API Key；系统会自动解析并验证。"
+      }];
+      renderChatMessages();
+      await openConfigModal();
+      return false;
+    }
+
+    async function saveAiConfig() {
+      const provider = selectedProvider();
+      if (!provider) return;
+      els.saveConfig.disabled = true;
+      setConfigResult("正在解析配置并调用模型做最小验证...（通常需要几秒）");
+      try {
+        const res = await fetch("../../api/ai/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            provider: provider.id,
+            configText: els.configText.value,
+            baseUrl: els.baseUrlInput.value.trim(),
+            model: els.modelInput.value.trim(),
+            keepExisting: !els.configText.value.trim()
+          })
+        });
+        const payload = await res.json();
+        if (!res.ok || payload.code !== 0) throw new Error(payload.message || "验证失败");
+        state.aiConfig = payload.config;
+        els.configText.value = "";
+        updateConfigStatus();
+        setConfigResult(payload.message || "验证并保存成功。", "success");
+        const pending = state.pendingMessage;
+        state.pendingMessage = null;
+        setTimeout(() => {
+          closeConfigModal();
+          if (pending) sendChatMessage(pending.question, pending.isSilent);
+        }, 500);
+      } catch (error) {
+        setConfigResult(error.message, "error");
+      } finally {
+        els.saveConfig.disabled = false;
+      }
+    }
+
+    async function clearAiConfig() {
+      if (!window.confirm("清除本机保存的 AI 服务配置？")) return;
+      const res = await fetch("../../api/ai/config/clear", { method: "POST" });
+      const payload = await res.json();
+      if (!res.ok || payload.code !== 0) {
+        setConfigResult(payload.message || "清除失败", "error");
+        return;
+      }
+      state.aiConfig = payload.config;
+      updateConfigStatus();
+      setConfigResult("本机 AI 配置已清除。", "success");
+    }
+
+    async function analyzeItem(item, source) {
+      state.source = source;
+      state.chatItem = item;
+      state.chatAnalysis = null;
+      state.chatMessages = [];
+      state.chatHistory = [];
+      state.suggestionRequestId += 1;
+
+      els.analysisTitle.textContent = cleanText(item).slice(0, 58);
+      els.chatInput.disabled = false;
+      els.chatSend.disabled = false;
+      els.chatSuggestions.hidden = true;
+      els.chatMessages.innerHTML = '';
+
+      await sendChatMessage("这条新闻有什么重点", true);
+    }
+
+    function formatAnalysisSummary(analysis) {
+      const lines = [];
+      lines.push(`<strong>影响判断：</strong>${escapeHtml(analysis.sentiment)}<br><em>${escapeHtml(analysis.summary)}</em>`);
+      if (analysis.sectors && analysis.sectors.length) {
+        const sectorText = analysis.sectors.map((s) => `${escapeHtml(s.name)}(${escapeHtml(s.impact)})`).join("；");
+        lines.push(`<strong>相关板块：</strong>${sectorText}`);
+      }
+      if (analysis.stocks && analysis.stocks.length) {
+        const stockText = analysis.stocks.map((s) => `${escapeHtml(s.code)} ${escapeHtml(s.name)}`).join("、");
+        lines.push(`<strong>相关股票：</strong>${stockText}`);
+      }
+      lines.push(`<strong>背景：</strong>${escapeHtml(analysis.context)}`);
+      return lines.join("<br><br>");
+    }
+
+    function openChatWindow(item, result) {
+      els.analysisTitle.textContent = cleanText(item).slice(0, 58);
+
+      if (result && result.loading) {
+        state.chatItem = item;
+        state.chatAnalysis = null;
+        state.chatMessages = [];
+        state.chatHistory = [];
+        state.suggestionRequestId += 1;
+        els.chatInput.disabled = true;
+        els.chatSend.disabled = true;
+        els.chatSuggestions.hidden = true;
+        els.chatMessages.innerHTML = '<div class="chat-typing">正在分析新闻影响...</div>';
+        return;
+      }
+
+      if (result && result.error) {
+        state.chatItem = item;
+        state.chatAnalysis = null;
+        state.chatMessages = [{ role: "assistant", content: `分析失败：${escapeHtml(result.error)}` }];
+        state.chatHistory = [];
+        state.suggestionRequestId += 1;
+        els.chatInput.disabled = true;
+        els.chatSend.disabled = true;
+        els.chatSuggestions.hidden = true;
+        renderChatMessages();
+        return;
+      }
+
+      const analysis = result.analysis;
+      state.chatItem = item;
+      state.chatAnalysis = analysis;
+      state.chatMessages = [{
+        role: "assistant",
+        content: formatAnalysisSummary(analysis)
+      }];
+      state.chatHistory = [{
+        role: "assistant",
+        content: JSON.stringify({
+          sentiment: analysis.sentiment,
+          summary: analysis.summary,
+          sectors: analysis.sectors,
+          stocks: analysis.stocks,
+          context: analysis.context,
+          watch: analysis.watch
+        })
+      }];
+      els.chatInput.disabled = false;
+      els.chatSend.disabled = false;
+      renderChatMessages();
+      renderFallbackSuggestions();
+      generateSuggestionsForCurrentItem();
+    }
+
+    function renderChatMessages() {
+      els.chatMessages.innerHTML = state.chatMessages.map((msg) => `
+        <div class="chat-msg ${msg.role}">
+          <span class="msg-label">${msg.role === "assistant" ? "AI" : "你"}</span>
+          ${msg.content}
+        </div>
+      `).join("");
+      els.chatMessages.scrollTop = els.chatMessages.scrollHeight;
+    }
+
+    function detectItemContext(item) {
+      const text = `${state.source} ${item.crawlerFeed || ""} ${item.kind || ""} ${item.type || ""} ${item.source || ""} ${item.link || ""} ${item.url || ""} ${cleanText(item)}`.toLowerCase();
+      if (text.includes("arxiv") || text.includes("paper") || text.includes("论文") || text.includes("research")) return "academic";
+      if (text.includes("github") || text.includes("repo") || text.includes("opensource") || text.includes("开源")) return "opensource";
+      if (text.includes("stock") || text.includes("market") || text.includes("moomoo") || text.includes("futunn") || text.includes("板块") || text.includes("股票")) return "market";
+      return "generic";
+    }
+
+    function buildFallbackSuggestions(item, analysis) {
+      const context = detectItemContext(item || {});
+      const hasSectors = Boolean(analysis && Array.isArray(analysis.sectors) && analysis.sectors.length);
+      const hasStocks = Boolean(analysis && Array.isArray(analysis.stocks) && analysis.stocks.length);
+
+      if (context === "academic") {
+        return ["有哪些相似研究？", "技术路线有什么局限？"];
+      }
+      if (context === "opensource") {
+        return ["有哪些相似项目？", "适合什么应用场景？"];
+      }
+      if (context === "market" || hasSectors || hasStocks) {
+        return ["利好哪些板块？", "关注哪些验证信号？"];
+      }
+      return ["这个进展价值在哪？", "后续影响有哪些？"];
+    }
+
+    function renderFallbackSuggestions() {
+      renderSuggestions(buildFallbackSuggestions(state.chatItem, state.chatAnalysis));
+    }
+
+    function renderSuggestionStatus(message) {
+      els.chatSuggestions.hidden = false;
+      els.chatSuggestions.innerHTML = "";
+      const btn = document.createElement("button");
+      btn.className = "chat-suggest-btn";
+      btn.type = "button";
+      btn.disabled = true;
+      btn.textContent = message;
+      els.chatSuggestions.appendChild(btn);
+    }
+
+    function renderSuggestions(questions) {
+      els.chatSuggestions.hidden = false;
+      els.chatSuggestions.innerHTML = "";
+      const cleanQuestions = Array.from(new Set((questions || [])
+        .map((q) => String(q || "").trim())
+        .filter(Boolean)))
+        .slice(0, 2);
+
+      if (!cleanQuestions.length) {
+        renderSuggestionStatus("可直接输入追问");
+        return;
+      }
+
+      cleanQuestions.forEach((q) => {
+        const btn = document.createElement("button");
+        btn.className = "chat-suggest-btn";
+        btn.type = "button";
+        btn.textContent = q;
+        btn.addEventListener("click", () => sendChatMessage(q));
+        els.chatSuggestions.appendChild(btn);
+      });
+    }
+
+    function hashText(value) {
+      let hash = 2166136261;
+      const text = String(value || "");
+      for (let i = 0; i < text.length; i += 1) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return (hash >>> 0).toString(36);
+    }
+
+    function suggestionCacheKey(item, analysis) {
+      const signature = {
+        source: state.source,
+        itemKey: item.newsUniqueId || item.id || item.key || item.link || item.url || cleanText(item),
+        title: cleanText(item),
+        crawlerFeed: item.crawlerFeed || item.kind || item.type || "",
+        sentiment: analysis && analysis.sentiment,
+        summary: analysis && analysis.summary,
+        context: analysis && analysis.context
+      };
+      return `moomoo:ai-chat:suggestions:v5:${hashText(JSON.stringify(signature))}`;
+    }
+
+    function readSuggestionCache(item, analysis) {
+      try {
+        const raw = localStorage.getItem(suggestionCacheKey(item, analysis));
+        if (!raw) return null;
+        const cached = JSON.parse(raw);
+        const ageMs = Date.now() - Number(cached.savedAt || 0);
+        if (!Array.isArray(cached.questions) || ageMs > 7 * 24 * 60 * 60 * 1000) return null;
+        return cached.questions;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function writeSuggestionCache(item, analysis, questions) {
+      try {
+        localStorage.setItem(suggestionCacheKey(item, analysis), JSON.stringify({
+          savedAt: Date.now(),
+          questions
+        }));
+      } catch (_) {}
+    }
+
+    function compactItemForSuggestion(item) {
+      return {
+        source: state.source,
+        crawlerFeed: item.crawlerFeed || item.kind || item.type || "",
+        title: cleanText(item).slice(0, 300),
+        content: String(item.content || item.description || item.summary || "").slice(0, 1200),
+        itemSource: item.source || item.source_name || "",
+        link: item.link || item.url || item.html_url || item.github_url || item.arxiv_url || ""
+      };
+    }
+
+    function compactAnalysisForSuggestion(analysis) {
+      return {
+        sentiment: analysis && analysis.sentiment,
+        summary: analysis && analysis.summary,
+        sectors: analysis && analysis.sectors,
+        stocks: analysis && analysis.stocks,
+        context: analysis && analysis.context,
+        watch: analysis && analysis.watch
+      };
+    }
+
+    function buildSuggestionPrompt(item, analysis) {
+      const context = {
+        item: compactItemForSuggestion(item),
+        analysis: compactAnalysisForSuggestion(analysis)
+      };
+      return `你是一个用于生成追问按钮的内部 agent。你的输出会直接填入界面里的 2 个追问按钮，用户不会看到这段指令。
+
+任务：基于当前内容和已有分析，分别给出 2 条合适的追问问题，帮助用户进一步了解这条内容。
+
+生成原则：
+1. 必须围绕已有分析里的重点判断、背景、影响路径和待验证信息生成，不要泛泛而谈。
+2. 如果是科技、AI、开源项目或论文相关进展，问题应覆盖相似研究、技术路线、应用场景、竞品对比、局限性或后续进展。
+3. 如果是市场新闻或财经事件，问题应覆盖可能影响、利好/利空板块、相关标的、验证信号、风险和时间窗口。
+4. 必须生成正好 2 条，每条都是中文问句，适合放在很窄的按钮里，尽量控制在 12 到 28 个汉字。
+5. 不要出现“这条内容”“这个分析”这种空泛说法，要尽量点出具体主题。
+6. 只返回严格 JSON 数组，例如 ["问题1？","问题2？"]。不要 markdown，不要解释，不要额外字段。
+
+上下文：
+${JSON.stringify(context, null, 2)}`;
+    }
+
+    function normalizeQuestionText(value) {
+      return String(value || "")
+        .replace(/^[-*•\d.、)）\s]+/, "")
+        .replace(/^["'“”]+|["'“”，,]+$/g, "")
+        .trim();
+    }
+
+    function parseSuggestionQuestions(answer) {
+      let text = String(answer || "").trim();
+      text = text.replace(/^```(?:json)?\s*/i, "").replace(/```$/i, "").trim();
+
+      const tryParse = (value) => {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) return parsed;
+          if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
+        } catch (_) {}
+        return null;
+      };
+
+      let parsed = tryParse(text);
+      if (!parsed) {
+        const match = text.match(/\[[\s\S]*\]/);
+        if (match) parsed = tryParse(match[0]);
+      }
+
+      const rawQuestions = parsed || text.split(/\n+/);
+      return Array.from(new Set(rawQuestions
+        .map(normalizeQuestionText)
+        .filter((q) => q.length >= 4 && q.length <= 80)))
+        .slice(0, 2);
+    }
+
+    async function generateSuggestionsForCurrentItem() {
+      if (!state.chatItem || !state.chatAnalysis) return;
+      const requestId = state.suggestionRequestId + 1;
+      state.suggestionRequestId = requestId;
+
+      const cached = readSuggestionCache(state.chatItem, state.chatAnalysis);
+      if (cached && cached.length) {
+        renderSuggestions(cached);
+        return;
+      }
+
+      try {
+        const res = await fetch("../../api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            item: state.chatItem,
+            question: buildSuggestionPrompt(state.chatItem, state.chatAnalysis),
+            history: state.chatHistory,
+            analysis: state.chatAnalysis,
+            mode: "suggestions"
+          })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const payload = await res.json();
+        if (payload.code !== 0) throw new Error(payload.message || "追问生成接口返回异常");
+        if (requestId !== state.suggestionRequestId) return;
+
+        const questions = parseSuggestionQuestions(payload.result && payload.result.answer);
+        if (questions.length < 2) throw new Error("没有解析到足够的追问");
+        const finalQuestions = questions.slice(0, 2);
+        writeSuggestionCache(state.chatItem, state.chatAnalysis, finalQuestions);
+        renderSuggestions(finalQuestions);
+      } catch (err) {
+        if (requestId !== state.suggestionRequestId) return;
+        console.warn("[AI Chat] suggestion generation failed; keeping fallback suggestions", err);
+        renderFallbackSuggestions();
+      }
+    }
+
+    async function sendChatMessage(question, isSilent = false) {
+      if (!question.trim() || !state.chatItem) return;
+      if (!await ensureAiConfigured(question, isSilent)) return;
+
+      els.chatInput.disabled = true;
+      els.chatSend.disabled = true;
+      els.chatInput.value = "";
+
+      if (!isSilent) {
+        state.chatMessages.push({ role: "user", content: escapeHtml(question) });
+        renderChatMessages();
+      }
+
+      const typingEl = document.createElement("div");
+      typingEl.className = "chat-typing";
+      typingEl.innerHTML = `AI 正在分析...<span class="spinner"></span>`;
+      els.chatMessages.appendChild(typingEl);
+      els.chatMessages.scrollTop = els.chatMessages.scrollHeight;
+
+      try {
+        const res = await fetch("../../api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            item: state.chatItem,
+            question,
+            history: state.chatHistory,
+            analysis: state.chatAnalysis
+          })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const payload = await res.json();
+        if (payload.code !== 0) throw new Error(payload.message || "追问接口返回异常");
+
+        typingEl.remove();
+        const result = payload.result;
+
+        let answerHtml = "";
+        try {
+          let cleanAnswer = result.answer.trim();
+          if (cleanAnswer.startsWith("```")) {
+            const lines = cleanAnswer.split("\n");
+            if (lines.length > 2) {
+              if (lines[0].trim().startsWith("```")) {
+                lines.shift();
+              }
+              if (lines[lines.length - 1].trim() === "```") {
+                lines.pop();
+              }
+              cleanAnswer = lines.join("\n").trim();
+            }
+          }
+          const parsed = JSON.parse(cleanAnswer);
+          if (parsed && typeof parsed === "object" && parsed.clear_answer) {
+            answerHtml = formatAgentOutput(parsed);
+            if (Array.isArray(parsed.suggested_followups) && parsed.suggested_followups.length > 0) {
+              renderSuggestions(parsed.suggested_followups);
+            }
+          } else {
+            answerHtml = renderMarkdownToHtml(result.answer);
+          }
+        } catch (e) {
+          answerHtml = renderMarkdownToHtml(result.answer);
+        }
+
+        state.chatMessages.push({ role: "assistant", content: answerHtml });
+        state.chatHistory.push({ role: "user", content: question });
+        state.chatHistory.push({ role: "assistant", content: result.answer });
+        renderChatMessages();
+      } catch (err) {
+        typingEl.remove();
+        state.chatMessages.push({ role: "assistant", content: `追问失败：${escapeHtml(err.message)}` });
+        renderChatMessages();
+      } finally {
+        els.chatInput.disabled = false;
+        els.chatSend.disabled = false;
+        els.chatInput.focus();
+      }
+    }
+
+    function closeChatWindow() {
+      window.parent.postMessage({ type: "close-ai-chat" }, "*");
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[ch]));
+    }
+
+    function renderMarkdownToHtml(text) {
+      let html = escapeHtml(text || "");
+      // Convert bold (**text**)
+      html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      // Convert list items
+      html = html.replace(/^\s*[-*•]\s+(.*$)/gim, '<li>$1</li>');
+      html = html.replace(/^\s*\d+\.\s+(.*$)/gim, '<li>$1</li>');
+      // Convert headers
+      html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+      html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+      html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+      // Convert newlines
+      html = html.replace(/\n/g, '<br>');
+      return html;
+    }
+
+    function formatAgentOutput(parsed) {
+      const caveats = Array.isArray(parsed.key_caveats) ? parsed.key_caveats : [];
+      const evidence = Array.isArray(parsed.evidence) ? parsed.evidence : [];
+      const riskCheck = Array.isArray(parsed.risk_check) ? parsed.risk_check : [];
+      const nextAction = Array.isArray(parsed.next_action) ? parsed.next_action : [];
+      
+      let html = `<div class="agent-response">`;
+      
+      if (parsed.confidence_level !== undefined) {
+        html += `<div style="margin-bottom: 12px;"><span style="background: rgba(255, 138, 31, 0.15); color: #ff8a1f; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 800; border: 1px solid rgba(255, 138, 31, 0.3);">信心指数: ${parsed.confidence_level}%</span></div>`;
+      }
+      
+      html += `<div class="agent-clear-answer" style="font-size: 14px; line-height: 1.6; margin-bottom: 16px; color: #ffffff;">${renderMarkdownToHtml(parsed.clear_answer)}</div>`;
+      
+      if (caveats.length > 0) {
+        html += `<div style="background: rgba(255, 75, 75, 0.08); border-left: 3px solid #ff4b4b; padding: 10px 14px; margin-bottom: 16px; border-radius: 0 4px 4px 0;">
+          <strong style="color: #ff4b4b; font-size: 12px; display: block; margin-bottom: 4px;">⚠️ 核心警示 (Caveats):</strong>
+          <ul style="margin: 0; padding-left: 16px; font-size: 13px; color: #e7edf7;">`;
+        caveats.forEach(c => {
+          html += `<li style="margin-bottom: 4px;">${renderMarkdownToHtml(c)}</li>`;
+        });
+        html += `</ul></div>`;
+      }
+      
+      if (riskCheck.length > 0) {
+        html += `<div style="background: rgba(255, 138, 31, 0.08); border-left: 3px solid #ff8a1f; padding: 10px 14px; margin-bottom: 16px; border-radius: 0 4px 4px 0;">
+          <strong style="color: #ff8a1f; font-size: 12px; display: block; margin-bottom: 4px;">🛡️ 风险复核 (Risk Check):</strong>
+          <ul style="margin: 0; padding-left: 16px; font-size: 13px; color: #e7edf7;">`;
+        riskCheck.forEach(r => {
+          html += `<li style="margin-bottom: 4px;">${renderMarkdownToHtml(r)}</li>`;
+        });
+        html += `</ul></div>`;
+      }
+      
+      if (evidence.length > 0) {
+        html += `<div style="margin-bottom: 16px;">
+          <strong style="color: #b9cdfd; font-size: 12px; display: block; margin-bottom: 6px;">📝 事实证据 (Evidence):</strong>
+          <ul style="margin: 0; padding-left: 16px; font-size: 13px; color: #d5deec;">`;
+        evidence.forEach(e => {
+          html += `<li style="margin-bottom: 4px;">${renderMarkdownToHtml(e)}</li>`;
+        });
+        html += `</ul></div>`;
+      }
+      
+      if (nextAction.length > 0) {
+        html += `<div style="margin-bottom: 16px;">
+          <strong style="color: #10b981; font-size: 12px; display: block; margin-bottom: 6px;">🚀 下一步建议行动 (Next Actions):</strong>
+          <ul style="margin: 0; padding-left: 16px; font-size: 13px; color: #d1fae5;">`;
+        nextAction.forEach(a => {
+          html += `<li style="margin-bottom: 4px;">${renderMarkdownToHtml(a)}</li>`;
+        });
+        html += `</ul></div>`;
+      }
+      
+      html += `</div>`;
+      return html;
+    }
+
+    els.analysisClose.addEventListener("click", closeChatWindow);
+    els.aiSettings.addEventListener("click", openConfigModal);
+    els.configClose.addEventListener("click", closeConfigModal);
+    els.configModal.addEventListener("click", (event) => {
+      if (event.target === els.configModal) closeConfigModal();
+    });
+    els.providerSelect.addEventListener("change", () => applyProviderDefaults(true));
+    els.saveConfig.addEventListener("click", saveAiConfig);
+    els.clearConfig.addEventListener("click", clearAiConfig);
+    els.openProvider.addEventListener("click", () => {
+      const provider = selectedProvider();
+      if (provider && provider.accountUrl) window.open(provider.accountUrl, "_blank", "noopener,noreferrer");
+    });
+    els.openKeyPage.addEventListener("click", () => {
+      const provider = selectedProvider();
+      if (provider && provider.keyUrl) window.open(provider.keyUrl, "_blank", "noopener,noreferrer");
+    });
+    els.chatSend.addEventListener("click", () => sendChatMessage(els.chatInput.value));
+    els.chatInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendChatMessage(els.chatInput.value);
+      }
+    });
+
+    window.addEventListener("message", (event) => {
+      const data = event.data || {};
+      if (data.type !== "open-ai-chat" || !data.item) return;
+      state.source = data.source || "zh";
+      analyzeItem(data.item, state.source);
+    });
+
+    window.parent.postMessage({ type: "ai-chat-ready" }, "*");
+    refreshConfigState().catch(() => updateConfigStatus());
+
+  </script>
+</body>
+</html>

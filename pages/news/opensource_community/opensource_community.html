@@ -1,0 +1,1394 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI News Crawler Feed</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0e14;
+      --panel: rgba(15, 20, 29, 0.86);
+      --panel-strong: rgba(18, 25, 36, 0.94);
+      --line: rgba(133, 151, 176, 0.17);
+      --line-hot: rgba(255, 138, 31, 0.34);
+      --text: #e7edf7;
+      --muted: #8d9aae;
+      --soft: #b9c6d9;
+      --orange: #ff8a1f;
+      --orange-soft: #ffc28a;
+      --danger: #ffd2da;
+      --ok: #9ee6be;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        linear-gradient(90deg, rgba(255, 138, 31, 0.025), transparent 16rem),
+        linear-gradient(180deg, #0a0e14 0%, #0c1118 52%, #090d13 100%);
+      font: 14px/1.55 Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    body { overflow: auto; }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    input,
+    select {
+      color: inherit;
+      font: inherit;
+    }
+
+    .feed-shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 70px 26px 34px;
+    }
+
+    .feed-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .feed-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 22px;
+      margin-bottom: 8px;
+      color: var(--orange-soft);
+      font-size: 12px;
+      font-weight: 760;
+      letter-spacing: 0.02em;
+    }
+
+    .feed-kicker::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--orange);
+      box-shadow: 0 0 16px rgba(255, 138, 31, 0.35);
+    }
+
+    .feed-title {
+      margin: 0;
+      color: #dfe5f0;
+      font-size: 24px;
+      line-height: 1.18;
+      font-weight: 850;
+    }
+
+    .feed-subtitle {
+      max-width: 760px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .feed-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .feed-control,
+    .feed-refresh {
+      height: 32px;
+      border: 1px solid rgba(170, 188, 215, 0.22);
+      border-radius: 5px;
+      background: rgba(12, 17, 25, 0.78);
+      color: #d9e2ef;
+      padding: 0 10px;
+      outline: none;
+    }
+
+    .feed-control:focus-visible,
+    .feed-refresh:focus-visible {
+      border-color: rgba(255, 138, 31, 0.72);
+      box-shadow: 0 0 0 3px rgba(255, 138, 31, 0.08);
+    }
+
+    .feed-refresh {
+      border-color: rgba(255, 138, 31, 0.45);
+      background: rgba(255, 138, 31, 0.12);
+      color: #ffd5b0;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .feed-refresh:hover {
+      border-color: rgba(255, 138, 31, 0.72);
+      background: rgba(255, 138, 31, 0.16);
+    }
+
+    .feed-status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      min-height: 28px;
+      margin: 12px 0 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 22px;
+      padding: 0 8px;
+      border: 1px solid rgba(170, 188, 215, 0.16);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .status-pill.ok { color: var(--ok); }
+    .status-pill.warn { color: #ffd5b0; }
+    .status-pill.error { color: var(--danger); }
+
+    .category-nav {
+      display: flex;
+      gap: 7px;
+      margin: 0 0 16px;
+      overflow-x: auto;
+      padding-bottom: 3px;
+      scrollbar-width: thin;
+    }
+
+    .category-chip {
+      flex: 0 0 auto;
+      min-height: 30px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(17, 23, 33, .74);
+      color: #9eabc0;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 720;
+    }
+
+    .category-chip:hover,
+    .category-chip.active {
+      border-color: rgba(255, 138, 31, .48);
+      color: #ffe0c3;
+      background: rgba(255, 138, 31, .11);
+    }
+
+    .category-chip b { margin-left: 5px; color: #6f7d91; font-weight: 650; }
+    .category-chip.active b { color: #f5b97f; }
+
+    .feed-list {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      grid-auto-flow: dense;
+      gap: 12px;
+    }
+
+    .feed-item {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      grid-column: span 6;
+      min-height: 272px;
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background:
+        radial-gradient(circle at 100% 0, rgba(79, 112, 153, .08), transparent 15rem),
+        var(--panel);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 8px 30px rgba(0, 0, 0, .12);
+      transition: border-color 0.16s, background 0.16s, transform 0.16s;
+    }
+
+    .feed-item:hover {
+      border-color: var(--line-hot);
+      background: var(--panel-strong);
+      transform: translateY(-1px);
+    }
+
+    .feed-item.featured {
+      grid-column: span 8;
+      min-height: 310px;
+      border-color: rgba(255, 138, 31, .28);
+      background:
+        radial-gradient(circle at 92% 10%, rgba(255, 138, 31, .12), transparent 18rem),
+        linear-gradient(145deg, rgba(22, 29, 41, .97), rgba(13, 18, 27, .92));
+    }
+
+    .feed-item.compact {
+      grid-column: span 4;
+      min-height: 310px;
+    }
+
+    .card-topline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .feed-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 690;
+    }
+
+    .feed-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 19px;
+      padding: 0 6px;
+      border-radius: 3px;
+      background: rgba(255, 138, 31, 0.13);
+      color: var(--orange-soft);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .feed-badge.gray {
+      background: rgba(170, 188, 215, 0.08);
+      color: #aebbd0;
+    }
+
+    .domain-badge {
+      color: #bcd4f6;
+      background: rgba(65, 123, 193, .13);
+      border: 1px solid rgba(95, 150, 217, .18);
+    }
+
+    .feed-item-title {
+      margin: 0;
+      color: #dbe6f5;
+      font-size: 18px;
+      line-height: 1.36;
+      font-weight: 820;
+    }
+
+    .feed-item.featured .feed-item-title { max-width: 92%; font-size: 25px; line-height: 1.22; }
+    .feed-item.compact .feed-item-title { font-size: 16px; }
+
+    .feed-item-title a:hover {
+      color: #ffffff;
+      text-decoration: underline;
+      text-decoration-color: rgba(255, 138, 31, 0.56);
+      text-underline-offset: 3px;
+    }
+
+    .feed-original-title {
+      margin: 4px 0 0;
+      color: #7f8da2;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .feed-summary {
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin: 9px 0 0;
+      color: var(--soft);
+      font-size: 13px;
+      line-height: 1.62;
+    }
+
+    .feed-item.featured .feed-summary { -webkit-line-clamp: 5; font-size: 14px; }
+    .feed-item.compact .feed-summary { -webkit-line-clamp: 5; font-size: 12px; }
+
+    .repo-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      margin-top: 13px;
+      color: #8e9eb4;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .repo-metrics strong { color: #d9e3f1; font-weight: 720; }
+
+    .feed-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: auto;
+      padding-top: 15px;
+      color: #9aa8bc;
+      font-size: 12px;
+    }
+
+    .feed-actions a,
+    .feed-actions button {
+      border: 0;
+      background: transparent;
+      color: #ffc28a;
+      cursor: pointer;
+      padding: 0;
+      font-size: 12px;
+      font-weight: 720;
+    }
+
+    .feed-actions a:hover,
+    .feed-actions button:hover {
+      color: #ffffff;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    details.feed-detail {
+      margin-top: 11px;
+      color: #aab6c8;
+      font-size: 12px;
+    }
+
+    details.feed-detail summary {
+      width: max-content;
+      cursor: pointer;
+      color: #9fb0c8;
+      font-weight: 720;
+    }
+
+    details.feed-detail[open] {
+      padding-top: 7px;
+      border-top: 1px solid rgba(133, 151, 176, 0.11);
+    }
+
+    .detail-box {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border: 1px solid rgba(133, 151, 176, 0.12);
+      border-radius: 6px;
+      background: rgba(7, 10, 15, 0.42);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .feed-empty,
+    .feed-loading,
+    .feed-error {
+      padding: 34px 4px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .feed-error { color: var(--danger); }
+
+    .translation-missing {
+      color: #ffd5b0;
+      font-weight: 720;
+    }
+
+    .analysis-trigger {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 28px;
+      border: 1px solid rgba(255, 138, 31, 0.36);
+      border-radius: 4px;
+      background: rgba(255, 138, 31, 0.10);
+      color: #ffd3aa;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      opacity: .72;
+      transition: opacity 0.16s, border-color 0.16s, background 0.16s;
+    }
+
+    .feed-item:hover .analysis-trigger,
+    .analysis-trigger:focus-visible {
+      opacity: 1;
+    }
+
+    .preview-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 129;
+      background: rgba(2, 5, 9, .58);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+
+    .preview-backdrop.open { opacity: 1; pointer-events: auto; }
+
+    .repo-preview {
+      position: fixed;
+      inset: 0 0 0 auto;
+      z-index: 130;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      width: min(720px, 100vw);
+      border-left: 1px solid rgba(160, 181, 211, .2);
+      background: #0b1018;
+      box-shadow: -30px 0 80px rgba(0, 0, 0, .52);
+      transform: translateX(104%);
+      transition: transform .23s ease;
+    }
+
+    .repo-preview.open { transform: translateX(0); }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-height: 58px;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(14, 20, 29, .96);
+    }
+
+    .preview-header strong { font-size: 14px; }
+    .preview-close { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 6px; background: transparent; cursor: pointer; }
+    .preview-close:hover { border-color: var(--line-hot); color: #fff; }
+    .preview-content { min-height: 0; overflow: auto; padding: 24px; }
+    .preview-state { padding: 40px 0; color: var(--muted); }
+    .preview-repo-name { margin: 0; font-size: 25px; line-height: 1.25; }
+    .preview-description { margin: 10px 0 0; color: var(--soft); font-size: 14px; }
+    .preview-metrics { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
+    .preview-metrics span, .preview-topic { padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px; color: #aebcd0; background: rgba(255,255,255,.025); font-size: 11px; }
+    .preview-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+    .preview-actions { display: flex; gap: 9px; margin: 18px 0 22px; }
+    .preview-actions a { padding: 8px 12px; border: 1px solid rgba(255,138,31,.38); border-radius: 6px; color: #ffd1a6; background: rgba(255,138,31,.1); font-size: 12px; font-weight: 750; }
+    .preview-actions a.secondary { border-color: var(--line); color: #b9c6d9; background: transparent; }
+    .readme-panel { border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: #0d131c; }
+    .readme-title { padding: 10px 14px; border-bottom: 1px solid var(--line); color: #cbd6e5; font-size: 12px; font-weight: 780; }
+    .readme-text { max-height: none; margin: 0; padding: 17px; overflow: auto; color: #aebbd0; font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
+
+    .analysis-trigger:hover {
+      border-color: rgba(255, 138, 31, 0.72);
+      background: rgba(255, 138, 31, 0.18);
+    }
+
+    .ai-chat-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 120;
+      width: min(430px, 100vw);
+      height: 100vh;
+      border-left: 1px solid var(--line);
+      background: rgba(10, 14, 21, 0.98);
+      box-shadow: -28px 0 70px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      transform: translateX(104%);
+      transition: transform 0.22s ease;
+    }
+
+    .ai-chat-drawer.open {
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    .ai-chat-frame {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: transparent;
+    }
+
+
+    .translate-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      height: 32px;
+      overflow: hidden;
+      border: 1px solid rgba(170, 188, 215, 0.22);
+      border-radius: 5px;
+      background: rgba(12, 17, 25, 0.78);
+    }
+
+    .translate-button {
+      height: 30px;
+      min-width: 52px;
+      border: 0;
+      border-right: 1px solid rgba(170, 188, 215, 0.16);
+      background: transparent;
+      color: #aebbd0;
+      cursor: pointer;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 760;
+      outline: none;
+    }
+
+    .translate-button:last-child {
+      border-right: 0;
+    }
+
+    .translate-button:hover,
+    .translate-button:focus-visible {
+      color: #ffffff;
+      background: rgba(255, 138, 31, 0.10);
+    }
+
+    .translate-button.active {
+      color: #10131a;
+      background: var(--orange);
+    }
+
+    #google_translate_element {
+      position: absolute !important;
+      left: -9999px !important;
+      top: -9999px !important;
+      width: 1px !important;
+      height: 1px !important;
+      overflow: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    html,
+    body,
+    html.translated-ltr body,
+    html.translated-rtl body {
+      top: 0 !important;
+      margin-top: 0 !important;
+    }
+
+    .goog-te-banner-frame,
+    .goog-te-banner-frame.skiptranslate,
+    iframe.goog-te-banner-frame,
+    iframe.skiptranslate,
+    .skiptranslate:not(#google_translate_element),
+    .VIpgJd-ZVi9od-ORHb-OEVmcd,
+    .VIpgJd-yAWNEb-L7lbkb,
+    #goog-gt-tt,
+    .goog-te-balloon-frame,
+    .goog-text-highlight {
+      display: none !important;
+      visibility: hidden !important;
+      height: 0 !important;
+      width: 0 !important;
+      opacity: 0 !important;
+      box-shadow: none !important;
+      background: transparent !important;
+    }
+
+    @media (max-width: 760px) {
+      .feed-shell {
+        padding: 66px 14px 28px;
+      }
+
+      .feed-head {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .feed-toolbar {
+        justify-content: flex-start;
+      }
+
+      .feed-item {
+        grid-column: span 12 !important;
+        min-height: 0;
+        padding: 15px;
+      }
+
+      .feed-item.featured .feed-item-title { font-size: 21px; }
+      .preview-content { padding: 18px; }
+    }
+
+    @media (min-width: 761px) and (max-width: 980px) {
+      .feed-item { grid-column: span 6; }
+      .feed-item.featured { grid-column: span 12; }
+      .feed-item.compact { grid-column: span 6; }
+    }
+  </style>
+</head>
+<body>
+  <main class="feed-shell">
+    <header class="feed-head">
+      <div>
+        <div class="feed-kicker" id="feedKicker">Crawler Feed</div>
+        <h1 class="feed-title" id="feedTitle">开源社区</h1>
+        <p class="feed-subtitle" id="feedSubtitle"></p>
+      </div>
+      <div class="feed-toolbar" aria-label="爬虫资讯工具栏">
+        <input class="feed-control" id="feedDate" type="date" aria-label="选择日期">
+        <select class="feed-control" id="feedLanguage" aria-label="语言显示">
+          <option value="zh">中文优先</option>
+          <option value="bilingual">双语</option>
+          <option value="original">原文</option>
+        </select>
+        <div class="translate-switch notranslate" aria-label="页面翻译" translate="no">
+          <button class="translate-button" id="translateZh" type="button" data-translate-lang="zh-CN">中文</button>
+          <button class="translate-button active" id="translateEn" type="button" data-translate-lang="en">英文</button>
+        </div>
+        <div id="google_translate_element" aria-hidden="true"></div>
+        <button class="feed-refresh" id="feedRefresh" type="button">刷新</button>
+      </div>
+    </header>
+
+    <div class="feed-status" id="feedStatus">
+      <span class="status-pill">等待加载</span>
+    </div>
+
+    <nav class="category-nav" id="categoryNav" aria-label="细分领域筛选"></nav>
+
+    <section id="feedContent" aria-live="polite">
+      <div class="feed-loading">正在初始化...</div>
+    </section>
+  </main>
+
+  <div class="ai-chat-drawer" id="aiChatDrawer" aria-hidden="true">
+    <iframe id="aiChatFrame" class="ai-chat-frame" src="../../ai_chat/ai_chat.html" title="AI Chat"></iframe>
+  </div>
+
+  <div class="preview-backdrop" id="previewBackdrop"></div>
+  <aside class="repo-preview" id="repoPreview" aria-hidden="true" aria-label="GitHub 仓库预览">
+    <header class="preview-header">
+      <strong>GitHub Repository Preview</strong>
+      <button class="preview-close" id="previewClose" type="button" aria-label="关闭预览">✕</button>
+    </header>
+    <div class="preview-content" id="previewContent"></div>
+  </aside>
+
+  <script>
+    const FEED_CONFIG = {
+      opensource: {
+        label: "开源社区",
+        kicker: "Github本周高星项目",
+        subtitle: "",
+        badge: "GitHub",
+        kind: "github"
+      },
+      academic: {
+        label: "学术资讯",
+        kicker: "arXiv / Research",
+        subtitle: "",
+        badge: "arXiv",
+        kind: "arxiv"
+      }
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const feedType = FEED_CONFIG[params.get("feed")] ? params.get("feed") : "opensource";
+    const config = FEED_CONFIG[feedType];
+
+    const els = {
+      kicker: document.querySelector("#feedKicker"),
+      title: document.querySelector("#feedTitle"),
+      subtitle: document.querySelector("#feedSubtitle"),
+      date: document.querySelector("#feedDate"),
+      language: document.querySelector("#feedLanguage"),
+      refresh: document.querySelector("#feedRefresh"),
+      translateZh: document.querySelector("#translateZh"),
+      translateEn: document.querySelector("#translateEn"),
+      status: document.querySelector("#feedStatus"),
+      categoryNav: document.querySelector("#categoryNav"),
+      content: document.querySelector("#feedContent"),
+      aiChatDrawer: document.querySelector("#aiChatDrawer"),
+      aiChatFrame: document.querySelector("#aiChatFrame"),
+      preview: document.querySelector("#repoPreview"),
+      previewBackdrop: document.querySelector("#previewBackdrop"),
+      previewClose: document.querySelector("#previewClose"),
+      previewContent: document.querySelector("#previewContent")
+    };
+
+    const state = {
+      baseUrl: "",
+      loading: false,
+      lastPayload: null,
+      items: [],
+      pendingAiItem: null,
+      activeDomain: "全部"
+    };
+
+    const DOMAIN_KEYWORDS = [
+      ["AI Agent", ["agent", "agentic", "multi-agent", "computer use", "tool calling"]],
+      ["大语言模型", ["llm", "large language model", "language model", "transformer", "fine-tuning", "reasoning model"]],
+      ["RAG 与搜索", ["rag", "retrieval augmented", "semantic search", "search engine", "reranker"]],
+      ["数据与向量库", ["vector database", "vector index", "vector store", "database", "data pipeline", "faiss", "quantization"]],
+      ["开发者工具", ["developer tool", "devtool", "code generation", "coding assistant", "code editor", "ide", "sdk", "cli", "debugger", "compiler"]],
+      ["计算机视觉", ["computer vision", "vision-language", "image generation", "object detection", "segmentation", "diffusion", "video generation", "ocr"]],
+      ["语音与音频", ["speech", "audio", "text-to-speech", "tts", "voice", "music generation"]],
+      ["安全与隐私", ["cybersecurity", "security", "vulnerability", "exploit", "malware", "privacy", "pentest"]],
+      ["机器人与具身智能", ["robotics", "robot", "embodied", "autonomous driving", "slam"]],
+      ["云原生与基础设施", ["kubernetes", "container", "cloud native", "observability", "distributed system", "infrastructure", "serverless", "devops"]],
+      ["Web 与应用", ["web app", "frontend", "browser", "mobile app", "desktop app", "react", "vue", "svelte"]],
+      ["评测与研究", ["benchmark", "evaluation", "dataset", "survey", "research", "leaderboard"]]
+    ];
+
+    const CRAWLER_PORT_RANGES = [
+      [8010, 8020],
+      [18110, 18120]
+    ];
+
+    function todayLocal() {
+      const date = new Date();
+      const offset = date.getTimezoneOffset();
+      const local = new Date(date.getTime() - offset * 60 * 1000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[ch]));
+    }
+
+    function stripHtml(value) {
+      const div = document.createElement("div");
+      div.innerHTML = String(value || "");
+      return div.textContent || div.innerText || "";
+    }
+
+    function hasKeyword(text, keyword) {
+      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(text);
+    }
+
+    function classifyContent(title, description) {
+      const titleText = String(title || "").toLowerCase();
+      const bodyText = String(description || "").toLowerCase();
+      let best = { domain: "其他", score: 0, keywords: [] };
+      DOMAIN_KEYWORDS.forEach(([domain, keywords]) => {
+        let score = 0;
+        const matched = [];
+        keywords.forEach((keyword) => {
+          const titleHit = hasKeyword(titleText, keyword);
+          const bodyHit = hasKeyword(bodyText, keyword);
+          if (titleHit || bodyHit) {
+            score += titleHit ? 3 : 1;
+            matched.push(keyword);
+          }
+        });
+        if (score > best.score) best = { domain, score, keywords: matched.slice(0, 4) };
+      });
+      return best;
+    }
+
+    function wait(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 2800) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        return await fetch(url, { ...options, signal: controller.signal, cache: "no-store" });
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function setStatus(items) {
+      els.status.innerHTML = items.map((item) => {
+        const type = item.type ? ` ${item.type}` : "";
+        return `<span class="status-pill${type}">${escapeHtml(item.text)}</span>`;
+      }).join("");
+    }
+
+    async function findCrawlerBaseUrl() {
+      if (state.baseUrl) return state.baseUrl;
+      const tried = [];
+      for (let round = 0; round < 5; round += 1) {
+        for (const [start, end] of CRAWLER_PORT_RANGES) {
+          for (let port = start; port <= end; port += 1) {
+            const base = `http://127.0.0.1:${port}`;
+            if (round === 0) tried.push(base);
+            try {
+              const res = await fetchWithTimeout(`${base}/health`, {}, 1200);
+              if (res.ok) {
+                const payload = await res.json().catch(() => ({}));
+                if (!payload.app || payload.app === "AI News Crawler") {
+                  state.baseUrl = base;
+                  return base;
+                }
+              }
+            } catch (_) {}
+          }
+        }
+        await wait(650);
+      }
+      console.warn("[CrawlerFeed] not found. Tried:", tried);
+      throw new Error("未找到 AI News Crawler 服务。已扫描 8010-8020 和 18110-18120。");
+    }
+
+    function normalizeItems(payload) {
+      const candidates = [
+        payload && payload.items,
+        payload && payload.news,
+        payload && payload.data && payload.data.items,
+        payload && payload.data && payload.data.news
+      ];
+      const items = candidates.find(Array.isArray) || [];
+      return items.map((item, index) => {
+        const title = item.title || item.name || item.repo || item.paper_title || "Untitled";
+        const description = item.description || item.summary || item.abstract || item.content || "";
+        const classification = item.domain
+          ? { domain: item.domain, keywords: item.domain_keywords || [] }
+          : classifyContent(title, description);
+        return {
+          key: item.key || item.id || item.link || item.url || `${index}`,
+          kind: String(item.kind || item.type || item.category || "").toLowerCase(),
+          title: stripHtml(title),
+          titleZh: item.title_zh || item.zh_title || item.name_zh || "",
+          description: stripHtml(description),
+          descriptionZh: item.summary_zh || item.description_zh || item.zh_summary || item.abstract_zh || "",
+          link: item.link || item.url || item.html_url || item.github_url || item.arxiv_url || "",
+          date: item.date || item.published_at || item.published || item.updated || item.crawl_date || "",
+          source: item.source || item.source_name || (Array.isArray(item.source_names) ? item.source_names.join(" / ") : ""),
+          stars: item.stars || item.star_count || "",
+          forks: item.forks || item.fork_count || item.raw?.forks || "",
+          language: item.language || item.raw?.language || "",
+          tags: Array.isArray(item.tags) ? item.tags : [],
+          domain: classification.domain || "其他",
+          domainKeywords: classification.keywords || [],
+          raw: item
+        };
+      });
+    }
+
+    function isAcademicItem(item) {
+      const text = `${item.kind} ${item.link} ${item.source} ${item.title}`.toLowerCase();
+      return item.kind === "arxiv" || text.includes("arxiv") || text.includes("paper") || text.includes("cs.");
+    }
+
+    function isOpenSourceItem(item) {
+      const link = String(item.link || "").toLowerCase();
+      const source = String(item.source || "").toLowerCase();
+      return item.kind === "github" || link.includes("github.com/") || source.includes("github") || source.includes("trending");
+    }
+
+    function filterItems(items) {
+      const filtered = items.filter(feedType === "academic" ? isAcademicItem : isOpenSourceItem);
+      return (filtered.length ? filtered : items).slice(0, 80);
+    }
+
+    function cacheKey() {
+      return `moomoo:crawler-feed:${feedType}:${els.date.value || todayLocal()}:v1`;
+    }
+
+    function readCache() {
+      try {
+        const raw = localStorage.getItem(cacheKey());
+        return raw ? JSON.parse(raw) : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function writeCache(payload) {
+      try {
+        localStorage.setItem(cacheKey(), JSON.stringify({
+          savedAt: new Date().toISOString(),
+          payload
+        }));
+      } catch (err) {
+        console.warn("[CrawlerFeed] cache write failed", err);
+      }
+    }
+
+    function getDisplayText(item) {
+      const mode = els.language.value || "zh";
+      const hasZh = Boolean(item.titleZh || item.descriptionZh);
+      const title = mode === "original"
+        ? item.title
+        : (item.titleZh || item.title);
+      const summary = mode === "original"
+        ? item.description
+        : (item.descriptionZh || item.description);
+
+      return {
+        mode,
+        hasZh,
+        title,
+        summary,
+        originalTitle: item.title,
+        originalSummary: item.description
+      };
+    }
+
+    function renderCategoryNav() {
+      if (!els.categoryNav) return;
+      const counts = state.items.reduce((result, item) => {
+        result[item.domain] = (result[item.domain] || 0) + 1;
+        return result;
+      }, {});
+      const domains = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      const options = [["全部", state.items.length], ...domains];
+      if (state.activeDomain !== "全部" && !counts[state.activeDomain]) state.activeDomain = "全部";
+      els.categoryNav.innerHTML = options.map(([domain, count]) => `
+        <button class="category-chip${state.activeDomain === domain ? " active" : ""}" type="button" data-domain="${escapeHtml(domain)}">
+          ${escapeHtml(domain)}<b>${count}</b>
+        </button>
+      `).join("");
+    }
+
+    function cardVariant(index) {
+      if (index === 0) return "featured";
+      if (index === 1 || (index > 2 && index % 5 === 4)) return "compact";
+      return "standard";
+    }
+
+    function renderItems(items, sourceLabel) {
+      const visibleItems = state.activeDomain === "全部"
+        ? items
+        : items.filter((item) => item.domain === state.activeDomain);
+      if (!visibleItems.length) {
+        els.content.innerHTML = `<div class="feed-empty">暂无可显示内容。${feedType === "academic" ? "arXiv 当前可能 timeout / 429，可以稍后刷新。" : "请确认 crawler 已经抓到 GitHub 数据。"}</div>`;
+        return;
+      }
+
+      const mode = els.language.value || "zh";
+      els.content.innerHTML = `<div class="feed-list">${visibleItems.map((item, index) => {
+        const display = getDisplayText(item);
+        const title = escapeHtml(display.title || "Untitled");
+        const summary = escapeHtml(display.summary || "暂无简介");
+        const originalTitle = escapeHtml(display.originalTitle || "");
+        const originalSummary = escapeHtml(display.originalSummary || "");
+        const source = escapeHtml(item.source || config.badge);
+        const date = escapeHtml(item.date || "recent");
+        const href = escapeHtml(item.link || "#");
+        const analyzeId = escapeHtml(item.key);
+        const variant = cardVariant(index);
+        const titleHtml = item.link
+          ? `<a href="${href}" target="_blank" rel="noreferrer">${title}</a>`
+          : title;
+        const translationBadge = mode !== "original" && !display.hasZh
+          ? `<span class="feed-badge gray">待翻译</span>`
+          : `<span class="feed-badge gray">${mode === "original" ? "原文" : mode === "bilingual" ? "双语" : "中文优先"}</span>`;
+        const bilingualTitle = mode === "bilingual" && display.hasZh && display.originalTitle && display.originalTitle !== display.title
+          ? `<p class="feed-original-title">${originalTitle}</p>`
+          : "";
+        const metrics = [
+          item.stars ? `<span><strong>${escapeHtml(item.stars)}</strong> ★</span>` : "",
+          item.forks ? `<span><strong>${escapeHtml(item.forks)}</strong> Forks</span>` : "",
+          item.language ? `<span><strong>${escapeHtml(item.language)}</strong></span>` : "",
+          `<span>${date}</span>`
+        ].filter(Boolean).join("");
+        return `
+          <article class="feed-item ${variant}">
+            <div class="card-topline">
+              <div class="feed-meta">
+                <span class="feed-badge">${escapeHtml(config.badge)}</span>
+                <span class="feed-badge domain-badge">${escapeHtml(item.domain)}</span>
+                ${variant === "featured" ? translationBadge : ""}
+              </div>
+              <button class="analysis-trigger" type="button" data-analyze-id="${analyzeId}" title="AI 分析" aria-label="AI 分析">AI</button>
+            </div>
+            <div>
+              <h2 class="feed-item-title">${titleHtml}</h2>
+              ${bilingualTitle}
+              <p class="feed-summary">${summary}</p>
+              <div class="repo-metrics">${metrics}</div>
+            </div>
+            <div class="feed-actions">
+              ${item.kind === "github" && item.link ? `<button type="button" data-preview-id="${analyzeId}">页内预览</button>` : ""}
+              ${item.link ? `<a href="${href}" target="_blank" rel="noreferrer">打开 ${item.kind === "github" ? "GitHub ↗" : "来源 ↗"}</a>` : ""}
+              <button type="button" data-copy="${href}">复制链接</button>
+              <span>${source}</span>
+            </div>
+            <details class="feed-detail">
+              <summary>展开原文 / 原始字段</summary>
+              <div class="detail-box">${originalTitle ? `标题：${originalTitle}\n\n` : ""}${originalSummary || "暂无原文详情"}</div>
+            </details>
+          </article>
+        `;
+      }).join("")}</div>`;
+
+      els.content.querySelectorAll("[data-copy]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const value = button.dataset.copy || "";
+          if (!value || value === "#") return;
+          try {
+            await navigator.clipboard.writeText(value);
+            button.textContent = "已复制";
+            setTimeout(() => { button.textContent = "复制链接"; }, 1200);
+          } catch (_) {
+            button.textContent = "复制失败";
+            setTimeout(() => { button.textContent = "复制链接"; }, 1200);
+          }
+        });
+      });
+    }
+
+    function renderPayload(payload, sourceLabel) {
+      state.lastPayload = payload;
+      const items = filterItems(normalizeItems(payload));
+      state.items = items;
+      renderCategoryNav();
+      renderItems(items, sourceLabel);
+      return items.length;
+    }
+
+    function findFeedItem(id) {
+      return state.items.find((item) => String(item.key) === String(id));
+    }
+
+    function githubRepoFromLink(link) {
+      try {
+        const url = new URL(link);
+        if (!["github.com", "www.github.com"].includes(url.hostname)) return "";
+        const parts = url.pathname.split("/").filter(Boolean);
+        return parts.length >= 2 ? `${parts[0]}/${parts[1].replace(/\.git$/, "")}` : "";
+      } catch (_) {
+        return "";
+      }
+    }
+
+    function safeHttpUrl(value) {
+      try {
+        const url = new URL(value);
+        return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+      } catch (_) {
+        return "";
+      }
+    }
+
+    function renderRepoPreview(data, item) {
+      const repoUrl = safeHttpUrl(data.html_url || item.link);
+      const homepage = safeHttpUrl(data.homepage);
+      const metrics = [
+        data.stars !== null && data.stars !== undefined ? `★ ${Number(data.stars).toLocaleString()}` : "",
+        data.forks !== null && data.forks !== undefined ? `⑂ ${Number(data.forks).toLocaleString()} forks` : "",
+        data.language || "",
+        data.license || "",
+        data.updated_at ? `更新 ${String(data.updated_at).slice(0, 10)}` : ""
+      ].filter(Boolean);
+      const topics = Array.isArray(data.topics) ? data.topics.slice(0, 14) : [];
+      els.previewContent.innerHTML = `
+        <h2 class="preview-repo-name">${escapeHtml(data.repo || item.title)}</h2>
+        <p class="preview-description">${escapeHtml(data.description || item.description || "该仓库暂无简介。")}</p>
+        <div class="preview-metrics">${metrics.map((metric) => `<span>${escapeHtml(metric)}</span>`).join("")}</div>
+        ${topics.length ? `<div class="preview-topics">${topics.map((topic) => `<span class="preview-topic">${escapeHtml(topic)}</span>`).join("")}</div>` : ""}
+        <div class="preview-actions">
+          ${repoUrl ? `<a href="${escapeHtml(repoUrl)}" target="_blank" rel="noreferrer">打开 GitHub ↗</a>` : ""}
+          ${homepage ? `<a class="secondary" href="${escapeHtml(homepage)}" target="_blank" rel="noreferrer">项目主页 ↗</a>` : ""}
+        </div>
+        <section class="readme-panel">
+          <div class="readme-title">README Preview</div>
+          <pre class="readme-text">${escapeHtml(data.readme || "仓库未提供 README，或 GitHub 暂时无法返回内容。")}</pre>
+        </section>`;
+    }
+
+    async function openRepoPreview(id) {
+      const item = findFeedItem(id);
+      const repo = item ? githubRepoFromLink(item.link) : "";
+      if (!item || !repo) return;
+      els.preview.classList.add("open");
+      els.previewBackdrop.classList.add("open");
+      els.preview.setAttribute("aria-hidden", "false");
+      els.previewContent.innerHTML = `<div class="preview-state">正在读取 ${escapeHtml(repo)} 的仓库信息与 README…</div>`;
+      try {
+        const base = await findCrawlerBaseUrl();
+        const response = await fetchWithTimeout(`${base}/api/github/preview?repo=${encodeURIComponent(repo)}`, {}, 22000);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
+        renderRepoPreview(data, item);
+      } catch (error) {
+        const fallbackUrl = safeHttpUrl(item.link);
+        els.previewContent.innerHTML = `
+          <div class="preview-state">预览读取失败：${escapeHtml(error.message || "GitHub API 暂时不可用")}</div>
+          ${fallbackUrl ? `<div class="preview-actions"><a href="${escapeHtml(fallbackUrl)}" target="_blank" rel="noreferrer">改为打开 GitHub ↗</a></div>` : ""}`;
+      }
+    }
+
+    function closeRepoPreview() {
+      els.preview?.classList.remove("open");
+      els.previewBackdrop?.classList.remove("open");
+      els.preview?.setAttribute("aria-hidden", "true");
+    }
+
+    function buildAiChatItem(item) {
+      const raw = item && item.raw && typeof item.raw === "object" ? { ...item.raw } : {};
+      const content = raw.content || raw.description || raw.summary || raw.abstract || item.description || item.title || "";
+      return {
+        ...raw,
+        id: raw.id || item.key,
+        newsUniqueId: raw.newsUniqueId || item.key,
+        title: raw.title || raw.name || item.title,
+        content,
+        source: item.source || raw.source || config.badge,
+        link: item.link || raw.link || raw.url || raw.html_url || "",
+        kind: item.kind || raw.kind || config.kind,
+        quote: Array.isArray(raw.quote) ? raw.quote : [],
+        crawlerFeed: feedType
+      };
+    }
+
+    function openAiChatFromItem(id) {
+      const item = findFeedItem(id);
+      if (!item || !els.aiChatDrawer || !els.aiChatFrame) return;
+      state.pendingAiItem = buildAiChatItem(item);
+      els.aiChatDrawer.classList.add("open");
+      els.aiChatDrawer.setAttribute("aria-hidden", "false");
+      // Force reload the iframe to prevent stale JS/HTML cache in memory
+      els.aiChatFrame.src = els.aiChatFrame.src;
+    }
+
+    function postPendingAiChatItem() {
+      if (!state.pendingAiItem || !els.aiChatFrame || !els.aiChatFrame.contentWindow) return;
+      els.aiChatFrame.contentWindow.postMessage({
+        type: "open-ai-chat",
+        source: feedType,
+        item: state.pendingAiItem
+      }, "*");
+      state.pendingAiItem = null;
+    }
+
+    function closeAiChatDrawer() {
+      if (!els.aiChatDrawer) return;
+      els.aiChatDrawer.classList.remove("open");
+      els.aiChatDrawer.setAttribute("aria-hidden", "true");
+    }
+
+    async function loadFeed({ force = false } = {}) {
+      if (state.loading) return;
+      state.loading = true;
+      const selectedDate = els.date.value || todayLocal();
+      els.date.value = selectedDate;
+
+      const cached = !force ? readCache() : null;
+      if (cached && cached.payload) {
+        const count = renderPayload(cached.payload, "cache");
+        setStatus([
+          { text: `本地缓存 ${count} 条`, type: "ok" },
+          { text: `缓存时间 ${new Date(cached.savedAt).toLocaleString()}` },
+          { text: `日期 ${selectedDate}` }
+        ]);
+      } else {
+        els.content.innerHTML = `<div class="feed-loading">正在加载${config.label}...</div>`;
+        setStatus([{ text: "正在连接 crawler..." }, { text: `日期 ${selectedDate}` }]);
+      }
+
+      try {
+        const base = await findCrawlerBaseUrl();
+        const query = new URLSearchParams({
+          refresh: force ? "true" : "false",
+          days: "7",
+          fallback_days: "15",
+          date: selectedDate,
+          kind: config.kind,
+          feed: feedType
+        });
+        const endpoint = `${base}/api/crawl?${query.toString()}`;
+        const res = await fetchWithTimeout(endpoint, {}, 60000);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const payload = await res.json();
+        writeCache(payload);
+        const count = renderPayload(payload, "live");
+        setStatus([
+          { text: `已连接 ${base}`, type: "ok" },
+          { text: `本次显示 ${count} 条` },
+          { text: `日期 ${selectedDate}` },
+          { text: force ? "已强制刷新" : "缓存优先" }
+        ]);
+      } catch (err) {
+        if (cached && cached.payload) {
+          setStatus([
+            { text: "使用本地缓存", type: "warn" },
+            { text: escapeHtml(err.message), type: "error" }
+          ]);
+        } else {
+          els.content.innerHTML = `
+            <div class="feed-error">
+              读取${config.label}失败：${escapeHtml(err.message)}<br>
+              请确认主网站 start.ps1 已启动 crawler，或手动运行 pages/news/opensource_community/start.bat。<br>
+              页面会自动探测 8010-8020 和 18110-18120 端口。
+            </div>
+          `;
+          setStatus([{ text: "加载失败", type: "error" }]);
+        }
+      } finally {
+        state.loading = false;
+      }
+    }
+
+    function hideGoogleTranslateChrome() {
+      document.documentElement.style.marginTop = "0px";
+      document.body.style.top = "0px";
+      document.body.style.marginTop = "0px";
+      document.querySelectorAll(
+        ".goog-te-banner-frame, iframe.goog-te-banner-frame, iframe.skiptranslate, .VIpgJd-ZVi9od-ORHb-OEVmcd, .VIpgJd-yAWNEb-L7lbkb, #goog-gt-tt, .goog-te-balloon-frame"
+      ).forEach((node) => {
+        node.style.setProperty("display", "none", "important");
+        node.style.setProperty("visibility", "hidden", "important");
+        node.style.setProperty("height", "0", "important");
+      });
+    }
+
+    function setTranslateCookie(value) {
+      const secure = location.protocol === "https:" ? "; secure" : "";
+      const expires = "; expires=Fri, 31 Dec 9999 23:59:59 GMT";
+      const host = location.hostname;
+      document.cookie = `googtrans=${value}; path=/${expires}${secure}`;
+      if (host && host.includes(".")) {
+        document.cookie = `googtrans=${value}; path=/; domain=.${host}${expires}${secure}`;
+      }
+    }
+
+    function clearTranslateCookie() {
+      const expired = "; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      const host = location.hostname;
+      document.cookie = `googtrans=; path=/${expired}`;
+      document.cookie = `googtrans=/en/en; path=/`;
+      if (host && host.includes(".")) {
+        document.cookie = `googtrans=; path=/; domain=.${host}${expired}`;
+        document.cookie = `googtrans=/en/en; path=/; domain=.${host}`;
+      }
+    }
+
+    function setTranslateButtonState(lang) {
+      els.translateZh?.classList.toggle("active", lang === "zh-CN");
+      els.translateEn?.classList.toggle("active", lang !== "zh-CN");
+      localStorage.setItem("moomoo:crawler-feed:google-translate", lang === "zh-CN" ? "zh-CN" : "en");
+    }
+
+    function applyGoogleTranslate(lang, { reloadOnReset = true } = {}) {
+      hideGoogleTranslateChrome();
+      setTranslateButtonState(lang);
+      const combo = document.querySelector(".goog-te-combo");
+      if (lang === "zh-CN") {
+        setTranslateCookie("/en/zh-CN");
+        if (combo) {
+          combo.value = "zh-CN";
+          combo.dispatchEvent(new Event("change"));
+        }
+        return;
+      }
+
+      clearTranslateCookie();
+      if (combo) {
+        combo.value = "";
+        combo.dispatchEvent(new Event("change"));
+      }
+      if (reloadOnReset && document.documentElement.className.includes("translated")) {
+        setTimeout(() => window.location.reload(), 120);
+      }
+    }
+
+    function init() {
+      els.kicker.textContent = config.kicker;
+      els.title.textContent = config.label;
+      els.subtitle.textContent = config.subtitle;
+      els.date.value = params.get("date") || todayLocal();
+
+      const savedLang = localStorage.getItem("moomoo:crawler-feed:language");
+      if (savedLang && ["zh", "bilingual", "original"].includes(savedLang)) {
+        els.language.value = savedLang;
+      }
+
+      els.refresh.addEventListener("click", () => loadFeed({ force: true }));
+      els.date.addEventListener("change", () => loadFeed({ force: false }));
+      els.language.addEventListener("change", () => {
+        localStorage.setItem("moomoo:crawler-feed:language", els.language.value);
+        if (state.lastPayload) renderPayload(state.lastPayload, "memory");
+      });
+      els.categoryNav?.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-domain]");
+        if (!button) return;
+        state.activeDomain = button.dataset.domain || "全部";
+        renderCategoryNav();
+        renderItems(state.items, "filter");
+      });
+      els.previewClose?.addEventListener("click", closeRepoPreview);
+      els.previewBackdrop?.addEventListener("click", closeRepoPreview);
+
+      els.aiChatFrame?.addEventListener("load", postPendingAiChatItem);
+      window.addEventListener("message", (event) => {
+        const data = event.data || {};
+        if (data.type === "ai-chat-ready") postPendingAiChatItem();
+        if (data.type === "close-ai-chat") closeAiChatDrawer();
+      });
+
+      document.addEventListener("click", (event) => {
+        const analyzeButton = event.target.closest("[data-analyze-id]");
+        if (analyzeButton) {
+          event.preventDefault();
+          event.stopPropagation();
+          openAiChatFromItem(analyzeButton.dataset.analyzeId);
+          return;
+        }
+        const previewButton = event.target.closest("[data-preview-id]");
+        if (previewButton) {
+          event.preventDefault();
+          openRepoPreview(previewButton.dataset.previewId);
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeAiChatDrawer();
+          closeRepoPreview();
+        }
+      });
+
+      els.translateZh?.addEventListener("click", () => applyGoogleTranslate("zh-CN"));
+      els.translateEn?.addEventListener("click", () => applyGoogleTranslate("en"));
+      const savedTranslateLang = localStorage.getItem("moomoo:crawler-feed:google-translate") || "en";
+      setTranslateButtonState(savedTranslateLang === "zh-CN" ? "zh-CN" : "en");
+
+      loadFeed({ force: false });
+    }
+
+    init();
+  </script>
+
+  <script>
+    window.googleTranslateElementInit = function () {
+      if (!window.google || !google.translate || !document.querySelector("#google_translate_element")) return;
+      new google.translate.TranslateElement({
+        pageLanguage: "en",
+        includedLanguages: "zh-CN,en",
+        autoDisplay: false,
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+      }, "google_translate_element");
+      hideGoogleTranslateChrome();
+      const savedTranslateLang = localStorage.getItem("moomoo:crawler-feed:google-translate") || "en";
+      if (savedTranslateLang === "zh-CN") {
+        setTimeout(() => applyGoogleTranslate("zh-CN", { reloadOnReset: false }), 300);
+      }
+    };
+
+    (function loadGoogleTranslate() {
+      const script = document.createElement("script");
+      script.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+      script.async = true;
+      script.onerror = function () {
+        els.translateZh.textContent = "翻译失败";
+        els.translateZh.disabled = true;
+        els.translateEn.disabled = true;
+      };
+      document.body.appendChild(script);
+      const hideTimer = setInterval(hideGoogleTranslateChrome, 350);
+      setTimeout(() => clearInterval(hideTimer), 12000);
+    })();
+  </script>
+</body>
+</html>

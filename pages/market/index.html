@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>市场热力图</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="market-page">
+    <header class="toolbar">
+      <div class="title-group">
+        <div class="eyebrow">MARKET MAP</div>
+        <h1>市场热力图</h1>
+        <span id="marketStatus" class="market-status" data-tone="loading">正在连接行情源</span>
+      </div>
+
+      <div class="controls" aria-label="热力图设置">
+        <label>
+          <span>市场</span>
+          <select id="marketSelect">
+            <option value="US">美股</option>
+            <option value="HK">港股</option>
+            <option value="CN">A股</option>
+          </select>
+        </label>
+        <label>
+          <span>面积</span>
+          <select id="sizeSelect">
+            <option value="market_cap">总市值</option>
+            <option value="turnover">成交额</option>
+          </select>
+        </label>
+        <button id="refreshButton" class="refresh-button" type="button" aria-label="刷新行情">
+          <span aria-hidden="true">↻</span> 刷新
+        </button>
+      </div>
+    </header>
+
+    <section class="summary" aria-label="市场概览">
+      <div><span>上涨</span><strong id="advanceCount" class="up">—</strong></div>
+      <div><span>下跌</span><strong id="declineCount" class="down">—</strong></div>
+      <div><span>平盘</span><strong id="flatCount">—</strong></div>
+      <div><span>覆盖标的</span><strong id="coverageCount">—</strong></div>
+      <div class="source-line"><span>数据源</span><strong id="sourceName">—</strong></div>
+      <div class="source-line"><span>数据时间</span><strong id="asOf">—</strong></div>
+    </section>
+
+    <section class="map-panel">
+      <div id="heatmap" class="heatmap" role="img" aria-label="按行业分组的市场热力图"></div>
+      <div id="emptyState" class="empty-state" hidden>
+        <div class="empty-icon" aria-hidden="true">◇</div>
+        <h2 id="emptyTitle">暂无市场数据</h2>
+        <p id="emptyMessage">行情接口没有返回可用标的，请稍后刷新。</p>
+        <button id="emptyRetry" type="button">重新请求</button>
+      </div>
+      <div id="loadingState" class="loading-state">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>读取真实市场快照…</span>
+      </div>
+    </section>
+
+    <footer class="legend-row">
+      <div class="legend" aria-label="涨跌幅颜色图例">
+        <span>-5%+</span>
+        <i style="--legend-color:#7d1f36"></i>
+        <i style="--legend-color:#b52c48"></i>
+        <i style="--legend-color:#482a34"></i>
+        <i style="--legend-color:#27313d"></i>
+        <i style="--legend-color:#174a3b"></i>
+        <i style="--legend-color:#11805a"></i>
+        <i style="--legend-color:#10ad72"></i>
+        <span>+5%+</span>
+      </div>
+      <p>面积代表所选指标，颜色代表当日涨跌幅。点击股票进入个股分析。</p>
+    </footer>
+  </main>
+
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+  <script src="./app.js"></script>
+</body>
+</html>

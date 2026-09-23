@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>期权工作台</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="workspace">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">OPTIONS · REAL MARKET DATA</div>
+        <h1>期权工作台</h1>
+      </div>
+      <div class="source-state" id="sourceState"><span class="status-dot"></span><span>等待加载数据</span></div>
+    </header>
+
+    <section class="control-panel" aria-label="期权链查询">
+      <form id="optionForm" class="query-form">
+        <label class="field symbol-field">
+          <span>标的</span>
+          <div class="input-wrap">
+            <input id="symbolInput" name="symbol" value="AAPL" autocomplete="off" spellcheck="false" placeholder="代码或公司名称">
+            <div id="searchSuggestions" class="suggestions" hidden></div>
+          </div>
+        </label>
+        <label class="field expiration-field">
+          <span>到期日</span>
+          <select id="expirationSelect" disabled><option value="">加载后选择</option></select>
+        </label>
+        <button class="load-button" id="loadButton" type="submit">读取期权链</button>
+      </form>
+      <div class="quick-symbols" aria-label="常用标的">
+        <span>常用</span>
+        <button type="button" data-symbol="SPY">SPY</button>
+        <button type="button" data-symbol="QQQ">QQQ</button>
+        <button type="button" data-symbol="AAPL">AAPL</button>
+        <button type="button" data-symbol="NVDA">NVDA</button>
+        <button type="button" data-symbol="TSLA">TSLA</button>
+      </div>
+    </section>
+
+    <section id="messagePanel" class="message-panel" aria-live="polite">
+      <div class="message-icon">⌁</div>
+      <div><strong>选择标的并读取真实期权链</strong><p>数据缺失时不会生成模拟报价或隐含波动率。</p></div>
+    </section>
+
+    <section id="content" class="content" hidden>
+      <div class="snapshot-grid">
+        <article class="metric-card"><span>标的</span><strong id="metricSymbol">--</strong><small id="metricName">--</small></article>
+        <article class="metric-card"><span>现价</span><strong id="metricPrice">--</strong><small id="metricCurrency">--</small></article>
+        <article class="metric-card"><span>到期日</span><strong id="metricExpiration">--</strong><small id="metricDte">--</small></article>
+        <article class="metric-card"><span>数据时间</span><strong id="metricAsOf">--</strong><small id="metricDelay">--</small></article>
+      </div>
+
+      <section class="panel strategy-panel">
+        <div class="panel-heading">
+          <div><span class="section-kicker">RULE-BASED OBSERVATION</span><h2>策略观察</h2></div>
+          <span class="notice-chip">非预测 · 不下单</span>
+        </div>
+        <p class="panel-note">仅从当前链中筛选流动性和价内外位置相对清晰的合约。它们是研究起点，不构成推荐；收益与风险判断仍需结合持仓、财报、分红和交易成本。</p>
+        <div id="strategyGrid" class="strategy-grid"></div>
+      </section>
+
+      <section class="panel chain-panel">
+        <div class="panel-heading chain-heading">
+          <div><span class="section-kicker">OPTION CHAIN</span><h2>期权链</h2></div>
+          <div class="chain-tools">
+            <div class="segmented" role="tablist" aria-label="合约类型">
+              <button class="active" type="button" data-side="calls" role="tab">Calls</button>
+              <button type="button" data-side="puts" role="tab">Puts</button>
+            </div>
+            <label class="compact-check"><input id="nearMoneyOnly" type="checkbox"> 仅看现价 ±20%</label>
+          </div>
+        </div>
+        <div class="legend-row">
+          <span><i class="legend-dot itm"></i>价内 ITM</span>
+          <span><i class="legend-dot atm"></i>近平值 ATM</span>
+          <span><i class="legend-dot otm"></i>价外 OTM</span>
+          <span id="contractCount">0 张合约</span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>价内外</th><th>执行价</th><th>最新价</th><th>Bid</th><th>Ask</th><th>价差</th><th>成交量</th><th>未平仓 OI</th><th>IV</th><th>合约代码</th></tr></thead>
+            <tbody id="chainBody"></tbody>
+          </table>
+        </div>
+        <div id="chainEmpty" class="table-empty" hidden>当前到期日没有可用合约数据。</div>
+      </section>
+
+      <footer class="data-footer">
+        <span id="sourceLabel">来源：--</span>
+        <span id="missingLabel">缺失字段：--</span>
+        <span>期权报价可能延迟；页面不提供交易执行。</span>
+      </footer>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1568 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>新闻交易站</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f15;
+      --sidebar: #171f2a;
+      --sidebar-active: #101722;
+      --line: rgba(133, 151, 176, 0.18);
+      --text: #e7edf7;
+      --muted: #8d9aae;
+      --orange: #ff8a1f;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        linear-gradient(90deg, rgba(255, 138, 31, 0.035), transparent 16rem),
+        linear-gradient(180deg, #0a0e14 0%, #0c1118 48%, #090d13 100%);
+      font: 14px/1.55 Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    button { color: inherit; font: inherit; }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 0;
+      border-right: 1px solid rgba(0, 0, 0, 0.55);
+      background: var(--sidebar);
+    }
+
+    .sidebar-brand {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      margin: 0 auto 14px;
+      border: 1px solid rgba(255, 138, 31, 0.46);
+      border-radius: 8px;
+      background: #131b25;
+      color: var(--orange);
+      font-weight: 800;
+    }
+
+    .sidebar-music {
+      display: grid;
+      place-items: center;
+      height: 54px;
+      flex: 0 0 54px;
+    }
+
+    .music-button {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 1px solid rgba(255, 138, 31, 0.38);
+      border-radius: 8px;
+      background:
+        linear-gradient(145deg, rgba(255, 138, 31, 0.18), rgba(255, 255, 255, 0.05)),
+        #111925;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 24px rgba(0, 0, 0, 0.22);
+      color: #ffd4b0;
+      cursor: pointer;
+      padding: 0;
+      transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .music-button:hover,
+    .music-button:focus-visible {
+      border-color: rgba(255, 138, 31, 0.76);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 3px rgba(255, 138, 31, 0.08);
+      outline: none;
+      transform: translateY(-1px);
+    }
+
+    .music-button.is-playing {
+      background:
+        linear-gradient(145deg, rgba(255, 138, 31, 0.28), rgba(255, 255, 255, 0.06)),
+        #141c27;
+    }
+
+    .music-button.is-playing::after {
+      content: "";
+      position: absolute;
+      right: 6px;
+      top: 6px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #ff8a1f;
+      box-shadow: 0 0 10px rgba(255, 138, 31, 0.85);
+    }
+
+    .music-turntable {
+      position: relative;
+      width: 27px;
+      height: 27px;
+      display: block;
+    }
+
+    .music-disc {
+      position: absolute;
+      left: 1px;
+      top: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 50%, #ffd4b0 0 2px, #111925 2px 5px, transparent 5px),
+        conic-gradient(from 20deg, rgba(255, 138, 31, 0.42), transparent 42deg 120deg, rgba(255, 255, 255, 0.14) 120deg 145deg, transparent 145deg 360deg),
+        repeating-radial-gradient(circle, #0d131d 0 2px, #242f3f 2px 3px);
+      box-shadow:
+        0 0 0 1px rgba(255, 212, 176, 0.2),
+        0 4px 10px rgba(0, 0, 0, 0.26);
+      transform-origin: 50% 50%;
+    }
+
+    .music-disc::after {
+      content: "";
+      position: absolute;
+      left: 5px;
+      top: 4px;
+      width: 4px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      transform: rotate(38deg);
+    }
+
+    .music-tonearm {
+      position: absolute;
+      right: 3px;
+      top: 4px;
+      width: 10px;
+      height: 18px;
+      border-top: 2px solid currentColor;
+      border-right: 2px solid currentColor;
+      border-radius: 0 9px 0 0;
+      opacity: 0.92;
+      transform: rotate(-18deg);
+      transform-origin: 9px 2px;
+      transition: transform 0.2s ease;
+    }
+
+    .music-tonearm::before {
+      content: "";
+      position: absolute;
+      right: -4px;
+      top: -5px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 3px rgba(255, 212, 176, 0.08);
+    }
+
+    .music-tonearm::after {
+      content: "";
+      position: absolute;
+      left: -2px;
+      bottom: -1px;
+      width: 5px;
+      height: 5px;
+      border-radius: 1px 1px 4px 4px;
+      background: currentColor;
+      transform: rotate(28deg);
+    }
+
+    .music-button.is-playing .music-disc {
+      animation: music-spin 1.45s linear infinite;
+    }
+
+    .music-button.is-playing .music-tonearm {
+      transform: rotate(-4deg);
+    }
+
+    @keyframes music-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .music-player-frame {
+      position: fixed;
+      left: -1px;
+      bottom: -1px;
+      width: 1px;
+      height: 1px;
+      border: 0;
+      opacity: 0.01;
+      pointer-events: none;
+    }
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      margin: 0;
+      padding: 0;
+    }
+
+    .sidebar-account {
+      position: relative;
+      display: grid;
+      place-items: center;
+      padding: 8px 0 10px;
+      border-top: 1px solid rgba(148, 163, 184, 0.10);
+    }
+
+    .account-button {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.04);
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 0;
+      font-size: 15px;
+      transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+    }
+
+    .account-button:hover,
+    .account-button:focus-visible {
+      border-color: rgba(255, 138, 31, 0.55);
+      background: rgba(255, 138, 31, 0.10);
+      color: #e2e8f0;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .account-button.logged-in {
+      width: auto;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 680;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .account-menu {
+      position: absolute;
+      bottom: 100%;
+      left: 4px;
+      right: 4px;
+      z-index: 90;
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+      padding: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 8px;
+      background: rgba(14, 20, 30, 0.98);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      margin-bottom: 8px;
+    }
+
+    .sidebar-account.has-menu .account-menu {
+      display: flex;
+    }
+
+    .account-menu button {
+      width: 100%;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: #cbd6e6;
+      cursor: pointer;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 650;
+      transition: background 0.14s, color 0.14s;
+    }
+
+    .account-menu button:hover {
+      background: rgba(255, 138, 31, 0.12);
+      color: #fff;
+    }
+
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+    }
+
+    .auth-overlay.hidden { display: none; }
+
+    .auth-modal-frame {
+      width: 380px;
+      height: 480px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      border-radius: 12px;
+      background: #141c28;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    .auth-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 40px;
+      padding: 0 14px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .auth-modal-header span {
+      font-size: 12px;
+      font-weight: 680;
+      color: #94a3b8;
+    }
+
+    .auth-modal-close {
+      border: 0;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 2px;
+    }
+
+    .auth-modal-close:hover { color: #e7edf7; }
+
+    .auth-iframe {
+      display: block;
+      width: 100%;
+      height: calc(100% - 40px);
+      border: 0;
+      background: transparent;
+    }
+
+    .nav-item {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: #aab5c4;
+      cursor: pointer;
+      padding: 0;
+      text-align: center;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--sidebar-active);
+      color: var(--text);
+    }
+
+    .nav-item.active::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--orange);
+    }
+
+    .nav-icon {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.07);
+      color: inherit;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .nav-item.active .nav-icon {
+      background: var(--orange);
+      color: #10131a;
+    }
+
+    .nav-label {
+      overflow: hidden;
+      font-size: 12px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .workspace {
+      min-width: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .page {
+      display: none;
+      height: 100vh;
+      min-width: 0;
+    }
+
+    .page.active { display: block; }
+
+    .content-frame,
+    .stock-analysis-frame {
+      display: block;
+      width: 100%;
+      height: 100vh;
+      border: 0;
+      background: transparent;
+    }
+
+    .placeholder-page.active {
+      display: grid;
+      gap: 22px;
+      padding: 42px 26px 34px;
+      overflow: auto;
+    }
+
+    .placeholder-header h2 {
+      margin: 0;
+      color: #e0e7f2;
+      font-size: 28px;
+      line-height: 1.1;
+    }
+
+    .favorites-page.active {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      height: 100vh;
+      overflow: hidden;
+      background: #0b1017;
+    }
+
+    .favorites-sidebar {
+      min-width: 0;
+      height: 100vh;
+      border-right: 1px solid rgba(148, 163, 184, 0.18);
+      background: #0b111a;
+      overflow: hidden;
+    }
+
+    .favorites-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 40px;
+      padding: 0 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .favorites-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin: 0;
+      font-size: 16px;
+      font-weight: 760;
+      letter-spacing: -0.01em;
+    }
+
+    .favorites-title::after {
+      content: "";
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid #9fb0c5;
+      transform: translateY(1px);
+    }
+
+    .favorites-tools {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #9fb0c5;
+      font-size: 15px;
+    }
+
+    .favorites-table-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 76px 72px;
+      gap: 8px;
+      padding: 8px 10px 6px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+      color: #90a0b5;
+      font-size: 11px;
+    }
+
+    .favorites-list {
+      height: calc(100vh - 72px);
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148, 163, 184, 0.26) transparent;
+    }
+
+    .favorite-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 76px 72px;
+      gap: 8px;
+      width: 100%;
+      min-height: 54px;
+      border: 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+      background: transparent;
+      color: #dce6f5;
+      padding: 7px 10px;
+      text-align: left;
+    }
+
+    .favorite-identity {
+      display: block;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .favorite-row:hover,
+    .favorite-row.active {
+      background: rgba(148, 163, 184, 0.08);
+      box-shadow: inset 2px 0 0 var(--orange);
+    }
+
+    .favorite-name {
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 720;
+      line-height: 1.25;
+    }
+
+    .favorite-symbol {
+      display: block;
+      max-width: 100%;
+      margin-top: 3px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #9fb0c5;
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .favorite-price,
+    .favorite-change {
+      align-self: center;
+      justify-self: end;
+      font-size: 12px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .favorite-change.positive,
+    .favorite-price.positive { color: #ff3b68; }
+
+    .favorite-change.negative,
+    .favorite-price.negative { color: #00c47a; }
+
+    .favorites-empty {
+      margin: 18px 10px;
+      padding: 16px 12px;
+      border: 1px dashed rgba(148, 163, 184, 0.28);
+      border-radius: 6px;
+      color: #8d9aae;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .favorites-stage {
+      position: relative;
+      display: block;
+      height: 100vh;
+      min-width: 0;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(255, 138, 31, 0.025), transparent 220px),
+        #0b0f15;
+    }
+
+    .favorites-stage-message {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      margin: 0;
+      transform: translate(-50%, -50%);
+      color: #536174;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+    }
+
+    .favorites-stage.has-analysis .favorites-stage-message {
+      display: none;
+    }
+
+    .favorites-analysis-frame {
+      height: 100%;
+      background: #0b0f15;
+    }
+
+    .favorites-analysis-frame[hidden] {
+      display: none;
+    }
+
+    .stock-analysis-wrap {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      border-radius: 0;
+    }
+
+    .stock-analysis-loading {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: var(--bg);
+      color: var(--muted);
+      font-size: 14px;
+      transition: opacity 0.3s;
+    }
+
+    .stock-analysis-loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .stock-analysis-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255, 138, 31, 0.18);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: sa-spin 0.8s linear infinite;
+    }
+
+    @keyframes sa-spin { to { transform: rotate(360deg); } }
+
+
+
+    .news-host {
+      position: relative;
+      display: block;
+      height: 100vh;
+      min-width: 0;
+      background: transparent;
+    }
+
+    .news-host-controls {
+      position: absolute;
+      top: 22px;
+      left: 26px;
+      z-index: 80;
+      display: block;
+      width: 132px;
+      padding: 0;
+      background: transparent;
+      pointer-events: none;
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.16s ease, transform 0.16s ease;
+    }
+
+    .news-host-controls.is-scrolled-away {
+      opacity: 0;
+      transform: translateY(-10px);
+      pointer-events: none;
+    }
+
+    .index-source-stack {
+      position: relative;
+      width: 132px;
+      pointer-events: auto;
+    }
+
+    .index-source-trigger {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      height: 34px;
+      border: 1px solid rgba(255, 138, 31, 0.48);
+      border-radius: 5px;
+      background: rgba(255, 138, 31, 0.08);
+      color: var(--text);
+      cursor: pointer;
+      padding: 0 11px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 720;
+      outline: none;
+      transition: border-color 0.16s, background 0.16s, box-shadow 0.16s;
+    }
+
+    .index-source-trigger:hover,
+    .index-source-stack.open .index-source-trigger {
+      border-color: rgba(255, 138, 31, 0.72);
+      background: rgba(255, 138, 31, 0.12);
+      box-shadow: 0 0 0 3px rgba(255, 138, 31, 0.055);
+    }
+
+    .index-source-trigger::after {
+      content: "";
+      width: 7px;
+      height: 7px;
+      margin-left: 10px;
+      border-right: 2px solid #c9d4e3;
+      border-bottom: 2px solid #c9d4e3;
+      transform: rotate(45deg) translateY(-2px);
+      transition: transform 0.16s ease, border-color 0.16s ease;
+    }
+
+    .index-source-stack.open .index-source-trigger::after {
+      border-color: #ffd9ba;
+      transform: rotate(225deg) translateY(-2px);
+    }
+
+    .index-feed-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      z-index: 40;
+      display: none;
+      gap: 6px;
+      padding: 6px;
+      border: 1px solid rgba(170, 188, 215, 0.24);
+      border-radius: 10px;
+      background: rgba(14, 20, 30, 0.98);
+      box-shadow: 0 18px 46px rgba(0, 0, 0, 0.46), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(12px);
+    }
+
+    .index-source-stack.open .index-feed-menu {
+      display: grid;
+    }
+
+    .index-feed-category {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      min-height: 34px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: #cbd6e6;
+      cursor: pointer;
+      padding: 0 10px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 700;
+      transition: background 0.16s, color 0.16s, transform 0.16s;
+    }
+
+    .index-feed-category[hidden] { display: none !important; }
+
+    .index-feed-category:hover,
+    .index-feed-category:focus-visible {
+      background: rgba(255, 138, 31, 0.12);
+      color: #ffffff;
+      outline: none;
+      transform: translateX(1px);
+    }
+
+    .index-feed-category::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      margin-right: 8px;
+      border-radius: 50%;
+      background: rgba(255, 138, 31, 0.72);
+      box-shadow: 0 0 10px rgba(255, 138, 31, 0.22);
+    }
+
+    .news-host-stage {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .news-feed-view {
+      display: none;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    .news-feed-view.active {
+      display: block;
+    }
+
+    .news-feed-view.content-frame {
+      height: 100%;
+    }
+
+    @media (max-width: 720px) {
+      html,
+      body { overflow: auto; }
+
+      .app-shell { grid-template-columns: 1fr; }
+
+      .sidebar {
+        position: static;
+        display: block;
+        height: auto;
+        padding: 8px;
+      }
+
+      .sidebar-brand,
+      .sidebar-foot,
+      .sidebar-account { display: none; }
+
+      .sidebar-music {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        height: 38px;
+        width: 38px;
+        z-index: 3;
+      }
+
+      .music-button {
+        width: 34px;
+        height: 34px;
+      }
+
+      .nav-list { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+      .nav-item {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        min-height: 46px;
+        text-align: center;
+      }
+
+      .nav-label { font-size: 11px; }
+
+      .workspace,
+      .page,
+      .content-frame,
+      .stock-analysis-frame,
+      .stock-analysis-wrap {
+        height: calc(100vh - 62px);
+      }
+
+      .favorites-page.active {
+        grid-template-columns: 1fr;
+        height: calc(100vh - 62px);
+      }
+
+      .favorites-sidebar,
+      .favorites-list {
+        height: auto;
+      }
+
+      .favorites-stage {
+        display: none;
+      }
+
+      .news-host-controls {
+        top: 18px;
+        left: 14px;
+        width: 138px;
+        padding: 0;
+      }
+
+      .index-source-stack {
+        width: 138px;
+      }
+}
+  </style>
+</head>
+<body data-active-page="news">
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="sidebar-music">
+        <button class="music-button" id="sidebarMusic" type="button" data-bvid="BV13USZBzEwY" aria-label="播放 Bilibili 音乐" aria-pressed="false" title="播放音乐">
+          <span class="music-turntable" aria-hidden="true">
+            <span class="music-disc"></span>
+            <span class="music-tonearm"></span>
+          </span>
+        </button>
+      </div>
+      <nav class="nav-list">
+        <button class="nav-item active" type="button" data-page="news" aria-current="page">
+          <span class="nav-icon">N</span><span class="nav-label">新闻</span>
+        </button>
+        <button class="nav-item" type="button" data-page="screener">
+          <span class="nav-icon">S</span><span class="nav-label">选股器</span>
+        </button>
+        <button class="nav-item" type="button" data-page="favorites">
+          <span class="nav-icon">P</span><span class="nav-label">自选</span>
+        </button>
+        <button class="nav-item" type="button" data-page="options">
+          <span class="nav-icon">O</span><span class="nav-label">期权</span>
+        </button>
+        <button class="nav-item" type="button" data-page="market">
+          <span class="nav-icon">M</span><span class="nav-label">市场</span>
+        </button>
+            <button class="nav-item" type="button" data-page="watchlist" aria-label="分析">
+                <span class="nav-icon">W</span><span class="nav-label">分析</span>
+            </button>
+        <button class="nav-item" type="button" data-page="quant">
+          <span class="nav-icon">Q</span><span class="nav-label">量化</span>
+        </button>
+      </nav>
+      <div class="sidebar-account" id="sidebarAccountWrap">
+        <div class="account-menu" id="accountMenu">
+          <button id="menuSwitchAccount" type="button">切换账号</button>
+          <button id="menuLogout" type="button">退出登录</button>
+        </div>
+        <button class="account-button" id="sidebarAccount" type="button" aria-label="账号" title="账号">
+          <span aria-hidden="true">👤</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <section class="page active" id="page-news" data-page-view="news">
+        <div class="news-host" id="newsHost" data-active-feed="market">
+          <section aria-label="资讯分类" class="news-host-controls">
+            <div aria-label="资讯分类" class="index-source-stack" id="indexSourceStack">
+              <button aria-controls="indexFeedMenu" aria-expanded="false" aria-haspopup="menu" class="index-source-trigger" id="indexSourceTrigger" type="button">市场资讯</button>
+              <div aria-labelledby="indexSourceTrigger" class="index-feed-menu" id="indexFeedMenu" role="menu">
+                <button class="index-feed-category" data-index-feed="market" hidden role="menuitem" type="button">市场资讯</button>
+                <button class="index-feed-category" data-index-feed="academic" role="menuitem" type="button">学术资讯</button>
+                <button class="index-feed-category" data-index-feed="opensource" role="menuitem" type="button">开源社区</button>
+              </div>
+            </div>
+          </section>
+          <div class="news-host-stage">
+            <iframe class="content-frame news-feed-view active" id="marketNewsFrame" src="pages/news/market_news.html" title="Market News" data-index-feed-view="market"></iframe>
+            <iframe
+              class="content-frame news-feed-view"
+              id="academicNewsFrame"
+              src="about:blank"
+              title="Academic News"
+              data-index-feed-view="academic"
+              data-src="pages/news/opensource_community/opensource_community.html?feed=academic"
+            ></iframe>
+            <iframe
+              class="content-frame news-feed-view"
+              id="opensourceNewsFrame"
+              src="about:blank"
+              title="Open Source Community"
+              data-index-feed-view="opensource"
+              data-src="pages/news/opensource_community/opensource_community.html?feed=opensource"
+            ></iframe>
+          </div>
+        </div>
+      </section>
+
+      <section class="page tool-page" id="page-screener" data-page-view="screener">
+        <iframe class="content-frame" id="screenerFrame" src="about:blank" data-src="pages/screener/index.html" title="股票选股器"></iframe>
+      </section>
+
+      <section class="page favorites-page" id="page-favorites" data-page-view="favorites">
+        <aside class="favorites-sidebar" aria-label="自选股票列表">
+          <header class="favorites-head">
+            <h2 class="favorites-title">自选</h2>
+          </header>
+          <div class="favorites-table-head" aria-hidden="true">
+            <span>名称代码</span>
+            <span>最新价</span>
+            <span>涨跌幅</span>
+          </div>
+          <div class="favorites-list" id="favoritesList"></div>
+          <div class="favorites-empty" id="favoritesEmpty">还没有收藏股票。进入“分析”的股票分析页，点击心形“加入收藏”。</div>
+        </aside>
+        <div class="favorites-stage" aria-label="自选详情">
+          <p class="favorites-stage-message" id="favoritesStageMessage">选择左侧股票后会打开分析面板。</p>
+          <div class="stock-analysis-loading hidden" id="favoritesAnalysisLoading">
+            <div class="stock-analysis-spinner"></div>
+            <p>正在加载股票分析面板...</p>
+          </div>
+          <iframe
+            id="favoritesAnalysisFrame"
+            class="stock-analysis-frame favorites-analysis-frame"
+            src="about:blank"
+            title="自选股票分析面板"
+            frameborder="0"
+            allowfullscreen
+            hidden
+          ></iframe>
+        </div>
+      </section>
+
+      <section class="page tool-page" id="page-options" data-page-view="options">
+        <iframe class="content-frame" id="optionsFrame" src="about:blank" data-src="pages/options/index.html" title="期权工作台"></iframe>
+      </section>
+
+      <section class="page tool-page" id="page-market" data-page-view="market">
+        <iframe class="content-frame" id="marketFrame" src="about:blank" data-src="pages/market/index.html?apiBase=/stock-analysis" title="市场热力图"></iframe>
+      </section>
+
+      <section class="page" id="page-watchlist" data-page-view="watchlist">
+        <div class="stock-analysis-wrap">
+          <div class="stock-analysis-loading" id="stockAnalysisLoading">
+            <div class="stock-analysis-spinner"></div>
+            <p>正在加载股票分析面板...</p>
+          </div>
+          <iframe
+            id="stockAnalysisFrame"
+            class="stock-analysis-frame"
+            src="about:blank"
+            title="Stock Analysis Dashboard"
+            frameborder="0"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </section>
+
+      <section class="page placeholder-page" id="page-quant" data-page-view="quant">
+        <header class="placeholder-header">
+          <h2>量化</h2>
+        </header>
+        <div style="display: flex; justify-content: center; align-items: center; flex: 1; padding: 40px 0;">
+          <img src="pages/banner/开发中.png" alt="正在开发中" style="max-width: 100%; object-fit: contain; border-radius: 8px;">
+        </div>
+      </section>
+    </main>
+    <iframe class="music-player-frame" id="bilibiliMusicFrame" title="Bilibili music player" src="about:blank" allow="autoplay; encrypted-media" aria-hidden="true"></iframe>
+
+    <!-- Auth overlay modal (hidden by default) -->
+    <div class="auth-overlay hidden" id="authOverlay">
+      <div class="auth-modal-frame">
+        <div class="auth-modal-header">
+          <span>账号</span>
+          <button class="auth-modal-close" id="authModalClose" aria-label="关闭">&times;</button>
+        </div>
+        <iframe
+          class="auth-iframe"
+          id="authIframe"
+          src="about:blank"
+          title="Login"
+        ></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = { page: "news" };
+    const STOCK_FAVORITES_KEY = "stockFavorites:v1";
+    const els = {
+      navItems: document.querySelectorAll(".nav-item[data-page]"),
+      pages: document.querySelectorAll(".page[data-page-view]"),
+      sidebarMusic: document.querySelector("#sidebarMusic"),
+      bilibiliMusicFrame: document.querySelector("#bilibiliMusicFrame"),
+      favoritesList: document.querySelector("#favoritesList"),
+      favoritesEmpty: document.querySelector("#favoritesEmpty"),
+      sidebarAccount: document.querySelector("#sidebarAccount")
+    };
+
+    function buildBilibiliPlayerUrl(bvid) {
+      const params = new URLSearchParams({
+        bvid,
+        page: "1",
+        autoplay: "1",
+        high_quality: "1",
+        danmaku: "0"
+      });
+      return `https://player.bilibili.com/player.html?${params.toString()}`;
+    }
+
+    function toggleSidebarMusic() {
+      if (!els.sidebarMusic || !els.bilibiliMusicFrame) return;
+      const isPlaying = els.sidebarMusic.classList.toggle("is-playing");
+      els.sidebarMusic.setAttribute("aria-pressed", isPlaying ? "true" : "false");
+      els.sidebarMusic.setAttribute("title", isPlaying ? "暂停音乐" : "播放音乐");
+      els.sidebarMusic.setAttribute("aria-label", isPlaying ? "暂停 Bilibili 音乐" : "播放 Bilibili 音乐");
+      els.bilibiliMusicFrame.src = isPlaying
+        ? buildBilibiliPlayerUrl(els.sidebarMusic.dataset.bvid || "BV13USZBzEwY")
+        : "about:blank";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    async function readStockFavorites() {
+      try {
+        const res = await fetch("/api/watchlist");
+        const data = await res.json();
+        console.log("[wl] server:", data);
+        if (data.code === 0 && Array.isArray(data.items) && data.items.length > 0) {
+          // Normalize snake_case server keys to camelCase
+          return data.items.map(function(it) {
+            return {
+              symbol: it.symbol || "",
+              name: it.name || it.symbol || "",
+              exchange: it.exchange || "",
+              lastPrice: it.last_price ?? it.lastPrice ?? null,
+              changePct: it.change_pct ?? it.changePct ?? null,
+            };
+          });
+        }
+      } catch (e) { console.warn("[wl] fetch err:", e); }
+      try {
+        const legacy = JSON.parse(localStorage.getItem("stockFavorites:v1") || "[]");
+        console.log("[wl] legacy localStorage:", legacy.length);
+        return Array.isArray(legacy) ? legacy : [];
+      } catch (__) { return []; }
+    }
+
+    function formatFavoritePrice(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number.toFixed(number >= 1000 ? 3 : 3) : "--";
+    }
+
+    function formatFavoriteChange(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return "--";
+      return `${number >= 0 ? "+" : ""}${number.toFixed(2)}%`;
+    }
+
+    function favoriteToneClass(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return "";
+      return number >= 0 ? "positive" : "negative";
+    }
+
+    async function renderFavoritesPage() {
+      if (!els.favoritesList || !els.favoritesEmpty) { console.warn("[wl] DOM missing"); return; }
+      let favorites = [];
+      try { favorites = await readStockFavorites(); } catch (e) { console.warn("[wl] read err:", e); favorites = []; }
+      if (!Array.isArray(favorites)) favorites = [];
+      console.log("[wl] render:", favorites.length, "items");
+      els.favoritesEmpty.hidden = favorites.length > 0;
+      els.favoritesList.innerHTML = favorites.map((item) => {
+        const tone = favoriteToneClass(item.changePct);
+        const name = item.name || item.symbol;
+        return `
+          <button class="favorite-row" type="button" data-favorite-symbol="${escapeHtml(item.symbol)}">
+            <span class="favorite-identity">
+              <span class="favorite-name">${escapeHtml(name)}</span>
+              <span class="favorite-symbol">${escapeHtml(item.symbol)}</span>
+            </span>
+            <span class="favorite-price ${tone}">${escapeHtml(formatFavoritePrice(item.lastPrice))}</span>
+            <span class="favorite-change ${tone}">${escapeHtml(formatFavoriteChange(item.changePct))}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function openStockAnalysisFromFavorite(symbol) {
+      const clean = String(symbol || "").trim().toUpperCase();
+      if (!clean) return;
+      loadFavoritesAnalysisFrame(clean);
+    }
+
+    function loadFavoritesAnalysisFrame(symbol) {
+      const frame = document.querySelector("#favoritesAnalysisFrame");
+      const stage = document.querySelector(".favorites-stage");
+      const loading = document.querySelector("#favoritesAnalysisLoading");
+      const clean = String(symbol || "").trim().toUpperCase();
+      if (!frame || !stage || !clean) return;
+
+      stage.classList.add("has-analysis");
+      frame.hidden = false;
+      if (loading) loading.classList.remove("hidden");
+
+      if (frame.dataset.loadingBound !== "1") {
+        frame.dataset.loadingBound = "1";
+        frame.addEventListener("load", () => {
+          if (loading) loading.classList.add("hidden");
+        });
+      }
+
+      frame.src = `stock-analysis?symbol=${encodeURIComponent(clean)}`;
+    }
+
+    function switchPage(page) {
+      state.page = page;
+      document.body.dataset.activePage = page;
+      els.navItems.forEach((item) => {
+        const active = item.dataset.page === page;
+        item.classList.toggle("active", active);
+        if (active) item.setAttribute("aria-current", "page");
+        else item.removeAttribute("aria-current");
+      });
+      els.pages.forEach((view) => {
+        view.classList.toggle("active", view.dataset.pageView === page);
+      });
+      if (page === "favorites") renderFavoritesPage();
+      if (["screener", "options", "market"].includes(page)) loadToolFrame(page);
+    }
+
+    function loadToolFrame(page) {
+      const frame = document.querySelector(`#${page}Frame`);
+      if (!frame || frame.dataset.loaded === "1") return;
+      const src = frame.dataset.src;
+      if (!src) return;
+      frame.dataset.loaded = "1";
+      frame.src = src;
+    }
+
+
+
+    const NEWS_FEED_LABELS = {
+      market: "市场资讯",
+      academic: "学术资讯",
+      opensource: "开源社区"
+    };
+
+    const newsFeedState = {
+      category: "market",
+      loadedFrames: { academic: false, opensource: false }
+    };
+
+    const newsEls = {
+      controls: document.querySelector(".news-host-controls"),
+      sourceStack: document.querySelector("#indexSourceStack"),
+      sourceTrigger: document.querySelector("#indexSourceTrigger"),
+      feedButtons: document.querySelectorAll("[data-index-feed]"),
+      views: document.querySelectorAll("[data-index-feed-view]"),
+      newsHost: document.querySelector("#newsHost")
+    };
+
+    function toggleIndexFeedMenu(forceOpen) {
+      if (!newsEls.sourceStack || !newsEls.sourceTrigger) return;
+      const shouldOpen = typeof forceOpen === "boolean"
+        ? forceOpen
+        : !newsEls.sourceStack.classList.contains("open");
+      newsEls.sourceStack.classList.toggle("open", shouldOpen);
+      newsEls.sourceTrigger.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+    }
+
+    function closeIndexFeedMenu() {
+      toggleIndexFeedMenu(false);
+    }
+
+    function getActiveNewsFeedFrame() {
+      return document.querySelector(`iframe[data-index-feed-view="${newsFeedState.category}"]`);
+    }
+
+    function getFrameScrollTop(frame) {
+      try {
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        const scrollEl = doc.scrollingElement || doc.documentElement || doc.body;
+        return Number(scrollEl && scrollEl.scrollTop) || 0;
+      } catch (_) {
+        return 0;
+      }
+    }
+
+    function syncIndexFeedControlVisibility() {
+      if (!newsEls.controls) return;
+      const frame = getActiveNewsFeedFrame();
+      const shouldHide = Boolean(frame && getFrameScrollTop(frame) > 16);
+      newsEls.controls.classList.toggle("is-scrolled-away", shouldHide);
+      if (shouldHide) closeIndexFeedMenu();
+    }
+
+    function bindNewsFeedFrameScroll(frame) {
+      if (!frame || frame.dataset.scrollSyncBound === "1") return;
+      frame.dataset.scrollSyncBound = "1";
+
+      const attach = () => {
+        try {
+          const win = frame.contentWindow;
+          const doc = frame.contentDocument || win.document;
+          const scrollEl = doc.scrollingElement || doc.documentElement || doc.body;
+          win.addEventListener("scroll", syncIndexFeedControlVisibility, { passive: true });
+          doc.addEventListener("scroll", syncIndexFeedControlVisibility, { passive: true });
+          if (scrollEl) scrollEl.addEventListener("scroll", syncIndexFeedControlVisibility, { passive: true });
+          syncIndexFeedControlVisibility();
+        } catch (_) {}
+      };
+
+      frame.addEventListener("load", attach);
+      setTimeout(attach, 400);
+    }
+
+    function bindNewsFeedFrameScrolls() {
+      document.querySelectorAll("iframe[data-index-feed-view]").forEach(bindNewsFeedFrameScroll);
+    }
+
+    function lazyLoadNewsFeedFrame(category) {
+      if (category === "market" || newsFeedState.loadedFrames[category]) return;
+      const frame = document.querySelector(`[data-index-feed-view="${category}"]`);
+      if (!frame || frame.tagName !== "IFRAME") return;
+      const targetSrc = frame.dataset.src;
+      if (!targetSrc) return;
+      frame.src = targetSrc;
+      newsFeedState.loadedFrames[category] = true;
+    }
+
+    function setIndexFeed(category) {
+      const nextCategory = NEWS_FEED_LABELS[category] ? category : "market";
+      newsFeedState.category = nextCategory;
+      if (newsEls.newsHost) newsEls.newsHost.dataset.activeFeed = nextCategory;
+      if (newsEls.sourceTrigger) {
+        newsEls.sourceTrigger.textContent = NEWS_FEED_LABELS[nextCategory] || NEWS_FEED_LABELS.market;
+      }
+
+      newsEls.feedButtons.forEach((button) => {
+        button.hidden = button.dataset.indexFeed === nextCategory;
+      });
+
+      newsEls.views.forEach((view) => {
+        view.classList.toggle("active", view.dataset.indexFeedView === nextCategory);
+      });
+
+      closeIndexFeedMenu();
+      lazyLoadNewsFeedFrame(nextCategory);
+      bindNewsFeedFrameScrolls();
+      setTimeout(syncIndexFeedControlVisibility, 120);
+    }
+
+    if (newsEls.sourceTrigger) {
+      newsEls.sourceTrigger.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleIndexFeedMenu();
+      });
+    }
+
+    newsEls.feedButtons.forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        setIndexFeed(button.dataset.indexFeed || "market");
+        button.blur();
+      });
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest("#indexSourceStack")) closeIndexFeedMenu();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeIndexFeedMenu();
+    });
+
+    let stockFrameLoaded = false;
+    function loadStockAnalysisFrame(symbol) {
+      const frame = document.querySelector("#stockAnalysisFrame");
+      const clean = String(symbol || "").trim().toUpperCase();
+      if (stockFrameLoaded && !clean) return;
+      stockFrameLoaded = true;
+      const loading = document.querySelector("#stockAnalysisLoading");
+      if (frame.dataset.loadingBound !== "1") {
+        frame.dataset.loadingBound = "1";
+        frame.addEventListener("load", () => {
+          if (loading) loading.classList.add("hidden");
+        });
+      }
+      frame.src = clean ? `stock-analysis?symbol=${encodeURIComponent(clean)}` : "stock-analysis";
+    }
+
+    els.navItems.forEach((item) => item.addEventListener("click", () => {
+      switchPage(item.dataset.page);
+      if (item.dataset.page === "watchlist") loadStockAnalysisFrame();
+    }));
+
+    if (els.sidebarMusic) {
+      els.sidebarMusic.addEventListener("click", toggleSidebarMusic);
+    }
+
+    // --- Auth state ---
+    let currentUser = null;
+
+    async function loadAuthState() {
+      try {
+        const res = await fetch("/api/auth/session");
+        const data = await res.json();
+        if (data.user) {
+          currentUser = data.user;
+          updateAccountButton();
+        }
+      } catch (_) {
+        currentUser = null;
+      }
+    }
+
+    function updateAccountButton() {
+      const btn = els.sidebarAccount;
+      if (!btn) return;
+      if (currentUser) {
+        btn.classList.add("logged-in");
+        btn.innerHTML = `<span class="auth-user-name">${escapeHtml(currentUser.username)}</span>`;
+        btn.title = currentUser.username;
+      } else {
+        btn.classList.remove("logged-in");
+        btn.innerHTML = '<span aria-hidden="true">👤</span>';
+        btn.title = "账号";
+      }
+    }
+
+    function showAuthModal() {
+      const overlay = document.getElementById("authOverlay");
+      const iframe = document.getElementById("authIframe");
+      if (!overlay || !iframe) return;
+      iframe.src = "login/login_window.html";
+      overlay.classList.remove("hidden");
+      document.getElementById("sidebarAccountWrap")?.classList.remove("has-menu");
+    }
+
+    function hideAuthModal() {
+      const overlay = document.getElementById("authOverlay");
+      const iframe = document.getElementById("authIframe");
+      if (overlay) overlay.classList.add("hidden");
+      if (iframe) iframe.src = "about:blank";
+    }
+
+    function toggleAccountMenu() {
+      const wrap = document.getElementById("sidebarAccountWrap");
+      if (!wrap || !currentUser) return;
+      wrap.classList.toggle("has-menu");
+    }
+
+    function clearUserPreferences() {
+      Object.keys(localStorage).forEach((key) => {
+        if (
+          key.startsWith("stockFavorites") ||
+          key.startsWith("stockAnalysis") ||
+          key.startsWith("aiChatSuggestions")
+        ) {
+          localStorage.removeItem(key);
+        }
+      });
+    }
+
+    async function switchAccount() {
+      await fetch("/api/auth/logout", { method: "POST" });
+      clearUserPreferences();
+      currentUser = null;
+      updateAccountButton();
+      document.getElementById("sidebarAccountWrap")?.classList.remove("has-menu");
+      showAuthModal();
+    }
+
+    async function logoutToAdmin() {
+      await fetch("/api/auth/logout", { method: "POST" });
+      clearUserPreferences();
+      currentUser = null;
+      updateAccountButton();
+      document.getElementById("sidebarAccountWrap")?.classList.remove("has-menu");
+    }
+
+    // Listen for login/register success and stock watchlist updates
+    window.addEventListener("message", async (event) => {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data || {};
+
+      if (data.app === "stock-analysis" && data.type === "STOCK_WATCHLIST_UPDATED") {
+        if (typeof renderFavoritesPage === "function") {
+          await renderFavoritesPage();
+        }
+        return;
+      }
+
+      if (data.type === "open-stock-analysis" && data.symbol) {
+        const symbol = String(data.symbol).trim().toUpperCase();
+        if (symbol) {
+          switchPage("watchlist");
+          loadStockAnalysisFrame(symbol);
+        }
+        return;
+      }
+
+      if (data.type === "auth-login-success" || data.type === "auth-register-success") {
+        clearUserPreferences();
+        location.reload();
+      }
+    });
+
+    // Account button: logged-in → toggle menu, not logged-in → show modal
+    if (els.sidebarAccount) {
+      els.sidebarAccount.addEventListener("click", () => {
+        if (currentUser) {
+          toggleAccountMenu();
+        } else {
+          showAuthModal();
+        }
+      });
+    }
+
+    // Menu buttons
+    document.getElementById("menuSwitchAccount")?.addEventListener("click", switchAccount);
+    document.getElementById("menuLogout")?.addEventListener("click", logoutToAdmin);
+
+    // Auth modal close
+    document.getElementById("authModalClose")?.addEventListener("click", hideAuthModal);
+    document.getElementById("authOverlay")?.addEventListener("click", (e) => {
+      if (e.target === e.currentTarget) hideAuthModal();
+    });
+
+    // Close account menu on outside click
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest("#sidebarAccountWrap")) {
+        document.getElementById("sidebarAccountWrap")?.classList.remove("has-menu");
+      }
+    });
+
+    if (els.favoritesList) {
+      els.favoritesList.addEventListener("click", (event) => {
+        const row = event.target.closest("[data-favorite-symbol]");
+        if (row) {
+          els.favoritesList.querySelectorAll(".favorite-row.active").forEach((item) => {
+            item.classList.remove("active");
+          });
+          row.classList.add("active");
+          openStockAnalysisFromFavorite(row.dataset.favoriteSymbol);
+        }
+      });
+    }
+
+    // Initialization order: auth first, then UI
+    (async function init() {
+      await loadAuthState();
+      bindNewsFeedFrameScrolls();
+      syncIndexFeedControlVisibility();
+      await renderFavoritesPage();
+      switchPage("news");
+    })();
+  </script>
+</body>
+</html>
